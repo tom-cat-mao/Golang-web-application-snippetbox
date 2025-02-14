@@ -8,8 +8,9 @@ import (
 )
 
 type templateData struct {
-	Snippet  models.Snippet
-	Snippets []models.Snippet
+	CurrentYear int
+	Snippet     models.Snippet
+	Snippets    []models.Snippet
 }
 
 // newTemplateCache reads all HTML files from the UI directory and parses them into a cache of *template.Template objects.

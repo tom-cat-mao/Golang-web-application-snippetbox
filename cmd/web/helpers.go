@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"time"
 )
 
 // serverError logs an error and sends a 500 Internal Server Error response.
@@ -51,4 +52,10 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 
 	// Write the rendered template output to the response body
 	buf.WriteTo(w)
+}
+
+func (app *application) newTemplateData(r *http.Request) templateData {
+	return templateData{
+		CurrentYear: time.Now().Year(),
+	}
 }
