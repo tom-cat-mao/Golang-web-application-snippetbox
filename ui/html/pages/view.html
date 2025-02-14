@@ -1,16 +1,27 @@
-{{define "title"}}Snippet #{{.Snippet.ID}}{{end}}
+{{define "title"}}Snippet #{{.Snippet.ID}}{{end}} 
+<!-- Define the title of the page as "Snippet" followed by the ID of the snippet -->
 
 {{define "main"}}
+<!-- Define the main content block for the page -->
     {{with .Snippet}}
+    <!-- Check if a snippet is available in the data passed to the template, and create a new scope -->
     <div class='snippet'>
+        <!-- Create a div container for the snippet -->
         <div class='metadata'>
+            <!-- Create a metadata section for displaying snippet details -->
             <strong>{{.Title}}</strong>
+            <!-- Display the title of the snippet as a strong text -->
             <span>#{{.ID}}</span>
+            <!-- Display the ID of the snippet prefixed with "#" -->
         </div>
         <pre><code>{{.Content}}</code></pre>
+        <!-- Wrap and style the content of the snippet using pre and code tags -->
         <div class='metadata'>
-            <time>Created: {{humanDate .Created}}</time>
-            <time>Expires: {{humanDate .Expires}}</time>
+            <!-- Create another metadata section for displaying creation and expiration details -->
+            <time>Created: {{.Created | humanDate}}</time>
+            <!-- Display the created timestamp, formatted by humanDate filter -->
+            <time>Expires: {{.Expires | humanDate}}</time>
+            <!-- Display the expiration timestamp, formatted by humanDate filter -->
         </div>
     </div>
     {{end}}

@@ -1,20 +1,39 @@
-{{define "title"}}Home{{end}} {{define "main"}}
+{{define "title"}}Home{{end}} 
+<!-- Define the title of the page as "Home" -->
+
+{{define "main"}}
+<!-- Define the main content block for the page -->
 <h2>Latest Snippets</h2>
+<!-- Display a heading indicating that the following section contains latest snippets -->
+
 {{if .Snippets}}
+<!-- Check if there are any snippets available -->
 <table>
+    <!-- Create an HTML table to display the snippets -->
     <tr>
+        <!-- Define the headers for the table -->
         <th>Title</th>
         <th>Created</th>
         <th>ID</th>
     </tr>
     {{range .Snippets}}
+    <!-- Loop through each snippet in the provided data -->
     <tr>
+        <!-- Create a new row for each snippet -->
         <td><a href="/snippet/view/{{.ID}}">{{.Title}}</a></td>
-        <td>{{humanDate .Created}}</td>
+        <!-- Display the title as a link to view the snippet, using snippet ID for routing -->
+        <td>{{.Created | humanDate}}</td>
+        <!-- Display the created timestamp, applying custom filter humanDate for formatting -->
         <td>#{{.ID}}</td>
+        <!-- Display the snippet ID prefixed with "#" -->
     </tr>
     {{end}}
 </table>
+<!-- End of the table containing snippets -->
 {{else}}
 <p>There's nothing to see here.. yet!</p>
-{{end}} {{end}}
+<!-- If no snippets are available, display a message indicating that there is nothing to see -->
+{{end}} 
+<!-- End of conditional block checking for snippets -->
+
+{{end}}
