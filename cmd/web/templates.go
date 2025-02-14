@@ -3,12 +3,14 @@ package main
 import (
 	"html/template"
 	"path/filepath"
+	"time"
 
 	"snippetbox.tomcat.net/internal/models"
 )
 
+// templateData holds data to be used when rendering HTML templates.
 type templateData struct {
-	CurrentYear int
+	CurrentYear int // The current year for copyright information.
 	Snippet     models.Snippet
 	Snippets    []models.Snippet
 }
@@ -29,8 +31,8 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		// Extract the base name of the file (filename without path)
 		name := filepath.Base(page)
 
-		// Create a new template set with the base.html as the layout
-		ts, err := template.ParseFiles("./ui/html/base.html")
+		// Create a new template object with the extracted filename and register custom functions
+		ts, err := template.New(name).Funcs(functions).ParseFiles("./ui/html/base.html")
 		if err != nil {
 			return nil, err
 		}
@@ -64,4 +66,14 @@ func newTemplateCache() (map[string]*template.Template, error) {
 	}
 
 	return cache, nil
+}
+
+// humanDate formats a time.Time object to a user-friendly string.
+func humanDate(t time.Time) string {
+	return t.Format("02 Jan 2006 at 15:04")
+}
+
+// functions is a template.FuncMap containing custom template functions.
+var functions = template.FuncMap{
+	"humanDate": humanDate,
 }
