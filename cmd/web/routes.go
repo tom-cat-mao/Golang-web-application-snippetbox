@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/justinas/alice"
+)
 
 func (app *application) routes() http.Handler {
 	// Create a new HTTP request multiplexer.
@@ -27,10 +31,12 @@ func (app *application) routes() http.Handler {
 	// This route handles POST requests to "/snippet/create" and is associated with the `snippetCreatePost` method of the application's `application` struct.
 	mux.HandleFunc("POST /snippet/create", app.snippetCreatePost)
 
-	// Apply middleware in the following order:
-	// 1. commonHeaders: Adds security-related headers to outgoing responses.
+	// Create a middleware chain using alice that includes:
+	// 1. recoverPanic: Recovers from any panic that occurs during the processing of a request.
 	// 2. logRequest: Logs details about each HTTP request.
-	// 3. recoverPanic: Recovers from any panic that occurs during the processing of a request.
+	// 3. commonHeaders: Adds security-related headers to outgoing responses.
+	standard := alice.New(app.recoverPanic, app.logRequest, commonHeaders)
 
-	return app.recoverPanic(app.logRequest(commonHeaders(mux)))
+	// Apply the middleware chain to the multiplexer.
+	return standard.Then(mux)
 }
