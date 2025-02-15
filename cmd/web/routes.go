@@ -15,17 +15,22 @@ func (app *application) routes() http.Handler {
 	// Define routes and associate them with handler functions.
 
 	// Route for the home page.
+	// This route handles GET requests to the root path ("/") and is associated with the `home` method of the application's `application` struct.
 	mux.HandleFunc("GET /{$}", app.home)
 
-	// Route to view a specific snippet by its ID.
+	// This route handles GET requests to "/snippet/view/{id}" where "{id}" is a dynamic segment representing the snippet's unique identifier. It is associated with the `snippetView` method of the application's `application` struct.
 	mux.HandleFunc("GET /snippet/view/{id}", app.snippetView)
 
-	// Route to display the form for creating a new snippet.
+	// This route handles GET requests to "/snippet/create" and is associated with the `snippetCreate` method of the application's `application` struct.
 	mux.HandleFunc("GET /snippet/create", app.snippetCreate)
 
-	// Route to handle POST requests for submitting the new snippet form.
+	// This route handles POST requests to "/snippet/create" and is associated with the `snippetCreatePost` method of the application's `application` struct.
 	mux.HandleFunc("POST /snippet/create", app.snippetCreatePost)
 
-	// Apply common headers and logging middleware to all routes.
-	return app.logRequest(commonHeaders(mux))
+	// Apply middleware in the following order:
+	// 1. commonHeaders: Adds security-related headers to outgoing responses.
+	// 2. logRequest: Logs details about each HTTP request.
+	// 3. recoverPanic: Recovers from any panic that occurs during the processing of a request.
+
+	return app.recoverPanic(app.logRequest(commonHeaders(mux)))
 }

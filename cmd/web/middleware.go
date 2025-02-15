@@ -1,6 +1,9 @@
 package main
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+)
 
 // commonHeaders middleware sets various security-related headers on outgoing HTTP responses.
 func commonHeaders(next http.Handler) http.Handler {
@@ -59,6 +62,24 @@ func (app *application) logRequest(next http.Handler) http.Handler {
 
 		// Log details of the received request
 		app.logger.Info("received request", "ip", ip, "proto", proto, "method", method, "uri", uri)
+
+		// Call the next handler in the chain with the modified response writer and request
+		next.ServeHTTP(w, r)
+	})
+}
+
+// recoverPanic middleware recovers from any panic that occurs during the processing of a request.
+func (app *application) recoverPanic(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				// Set the connection to close immediately after sending the response
+				w.Header().Set("Connection", "close")
+
+				// Log the error using the application's logger
+				app.serverError(w, r, fmt.Errorf("%s", err))
+			}
+		}()
 
 		// Call the next handler in the chain with the modified response writer and request
 		next.ServeHTTP(w, r)
