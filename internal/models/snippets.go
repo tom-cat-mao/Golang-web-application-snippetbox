@@ -6,18 +6,25 @@ import (
 	"time"
 )
 
+// Snippet represents a single snippet in the database.
+// It contains the snippet's ID, title, content, creation time, and expiration time.
 type Snippet struct {
-	ID      int
-	Title   string
-	Content string
-	Created time.Time
-	Expires time.Time
+	ID      int       // Unique identifier for the snippet
+	Title   string    // Title of the snippet
+	Content string    // Content of the snippet
+	Created time.Time // Time when the snippet was created
+	Expires time.Time // Time when the snippet will expire
 }
 
+// SnippetModel wraps a sql.DB connection pool and provides methods
+// for interacting with the snippets table in the database.
 type SnippetModel struct {
-	DB *sql.DB
+	DB *sql.DB // Database connection pool
 }
 
+// Insert creates a new snippet record in the database.
+// It takes the snippet's title, content, and expiration period (in days) as parameters.
+// Returns the ID of the newly created snippet or an error if the operation fails.
 func (m *SnippetModel) Insert(title string, content string, expires int) (int, error) {
 	stmt := `INSERT INTO snippets (title, content, created, expires)
 	VALUES(?, ?, UTC_TIMESTAMP(), DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? DAY))`
@@ -35,6 +42,9 @@ func (m *SnippetModel) Insert(title string, content string, expires int) (int, e
 	return int(id), nil
 }
 
+// Get retrieves a specific snippet from the database by its ID.
+// It returns the snippet if found, or ErrNoRecord if no matching record exists.
+// Returns an error if the database operation fails.
 func (m *SnippetModel) Get(id int) (Snippet, error) {
 	stmt := `SELECT id, title, content, created, expires FROM snippets
 	WHERE expires > UTC_TIMESTAMP() AND id = ?`
@@ -54,6 +64,8 @@ func (m *SnippetModel) Get(id int) (Snippet, error) {
 	return s, nil
 }
 
+// Latest retrieves the 10 most recently created snippets from the database.
+// It returns a slice of Snippet objects or an error if the database operation fails.
 func (m *SnippetModel) Latest() ([]Snippet, error) {
 	stmt := `SELECT id, title, content, created, expires FROM snippets
 	WHERE expires > UTC_TIMESTAMP() ORDER BY id DESC LIMIT 10`
