@@ -26,6 +26,6 @@ func (app *application) routes() http.Handler {
 	// Route to handle POST requests for submitting the new snippet form.
 	mux.HandleFunc("POST /snippet/create", app.snippetCreatePost)
 
-	// Apply the commonHeaders middleware to all routes.
-	return commonHeaders(mux)
+	// Apply common headers and logging middleware to all routes.
+	return app.logRequest(commonHeaders(mux))
 }

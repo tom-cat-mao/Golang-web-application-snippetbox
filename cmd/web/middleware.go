@@ -2,6 +2,7 @@ package main
 
 import "net/http"
 
+// commonHeaders middleware sets various security-related headers on outgoing HTTP responses.
 func commonHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set Content-Security-Policy header for security.
@@ -41,6 +42,25 @@ func commonHeaders(next http.Handler) http.Handler {
 		)
 
 		// Call the next handler in the chain with the modified response writer and request.
+		next.ServeHTTP(w, r)
+	})
+}
+
+// logRequest middleware logs details about each HTTP request received by the server.
+func (app *application) logRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Extract details from the incoming request
+		var (
+			ip     = r.RemoteAddr       // IP address of the client making the request
+			proto  = r.Proto            // Protocol used for the request (e.g., "HTTP/1.1")
+			method = r.Method           // HTTP method used (e.g., "GET", "POST")
+			uri    = r.URL.RequestURI() // Request URI path and query string
+		)
+
+		// Log details of the received request
+		app.logger.Info("received request", "ip", ip, "proto", proto, "method", method, "uri", uri)
+
+		// Call the next handler in the chain with the modified response writer and request
 		next.ServeHTTP(w, r)
 	})
 }
