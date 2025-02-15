@@ -68,8 +68,7 @@ type snippetCreateForm struct {
 }
 
 // home handles GET requests to the application's homepage (/).
-// It retrieves the 5 most recent snippets from the database and renders them
-// using the home page template.
+// It retrieves and displays the 5 most recent snippets.
 //
 // Security:
 //   - No authentication required
@@ -122,8 +121,6 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 }
 
 // snippetView handles GET requests to view a specific snippet (/snippet/view/{id}).
-// It accepts a snippet ID as a URL parameter, retrieves the corresponding snippet
-// from the database, and renders it using the view template.
 //
 // Security:
 //   - No authentication required
@@ -200,9 +197,6 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 }
 
 // snippetCreate handles GET requests to display the snippet creation form (/snippet/create).
-// It renders an HTML form that allows users to input new snippet information.
-// This handler only displays the form - the actual creation is handled by
-// snippetCreatePost.
 //
 // Security:
 //   - No authentication required
@@ -248,8 +242,6 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 // snippetCreatePost handles POST requests to create a new snippet (/snippet/create).
-// It processes the form submission, validates the input data, and creates
-// a new snippet record in the database.
 //
 // Security:
 //   - No authentication required
@@ -323,21 +315,12 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 //   - On validation error: HTTP 422 with error messages
 //   - On database error: HTTP 500 Internal Server Error
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
-	// Parse form data from the request
-	// Handles both URL-encoded and multipart form data
-	err := r.ParseForm() // Parse form data from request
-	if err != nil {
-		// Return 400 Bad Request if form parsing fails
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
-
 	// Initialize form struct to hold submitted data
 	var form snippetCreateForm
 
 	// Decode form data from POST request into struct
 	// Uses formDecoder to handle both URL-encoded and multipart form data
-	err = app.formDecoder.Decode(&form, r.PostForm)
+	err := app.decodePostForm(r, &form)
 	if err != nil {
 		// Return 400 Bad Request if form decoding fails
 		app.clientError(w, http.StatusBadRequest)
