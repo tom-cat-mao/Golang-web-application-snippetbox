@@ -1,20 +1,43 @@
+{{/* Define the page title */}}
 {{define "title"}} Create a New Snippet{{end}}
+
+{{/* Main content section */}}
 {{define "main"}}
 <form action="/snippet/create" method="POST">
+    {{/* Title input field */}}
     <div>
         <label>Title:</label>
-        <input type="text" name="title">
+        {{/* Display title validation errors if they exist */}}
+        {{with .Form.FieldErrors.title}}
+            <label class="error">{{.}}</label>
+        {{end}}
+        <input type="text" name="title" value="{{.Form.Title}}">
     </div>
+
+    {{/* Content textarea field */}}
     <div>
         <label>Content:</label>
-        <textarea name="content"></textarea>
+        {{/* Display content validation errors if they exist */}}
+        {{with .Form.FieldErrors.content}}
+            <label class="error">{{.}}</label>
+        {{end}}
+        <textarea name="content">{{.Form.Content}}</textarea>
     </div>
+
+    {{/* Expiration radio buttons */}}
     <div>
         <label>Delete in:</label>
-        <input type="radio" name="expires" value="365" checked> One Year
-        <input type="radio" name="expires" value="7"> One Week
-        <input type="radio" name="expires" value="1"> One Day
+        {{/* Display expiration validation errors if they exist */}}
+        {{with .Form.FieldErrors.expires}}
+            <label class="error">{{.}}</label>
+        {{end}}
+        {{/* Radio button options with checked state based on form value */}}
+        <input type="radio" name="expires" value="365" {{if (eq .Form.Expires 365)}}checked{{end}}> One Year
+        <input type="radio" name="expires" value="7" {{if (eq .Form.Expires 7)}}checked{{end}}> One Week
+        <input type="radio" name="expires" value="1" {{if (eq .Form.Expires 1)}}checked{{end}}> One Day
     </div>
+
+    {{/* Submit button */}}
     <div>
         <input type="submit" value="Publish snippet">
     </div>

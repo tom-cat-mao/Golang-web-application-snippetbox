@@ -13,6 +13,7 @@ type templateData struct {
 	CurrentYear int // The current year for copyright information.
 	Snippet     models.Snippet
 	Snippets    []models.Snippet
+	Form        any
 }
 
 // newTemplateCache reads all HTML files from the UI directory and parses them into a cache of *template.Template objects.
