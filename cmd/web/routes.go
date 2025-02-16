@@ -7,36 +7,49 @@ import (
 )
 
 func (app *application) routes() http.Handler {
-	// Create a new HTTP request multiplexer.
+	// Create a new HTTP request multiplexer (router) that will match incoming
+	// requests against registered routes and dispatch them to the appropriate
+	// handler functions.
 	mux := http.NewServeMux()
 
-	// Set up a file server to serve static files from the `./ui/static/` directory.
+	// Set up a file server to serve static files (CSS, JS, images) from the
+	// ./ui/static/ directory. The file server will handle requests for static
+	// resources like /static/css/main.css.
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 
-	// Handle requests for static resources and strip the "/static" prefix from the URL path.
+	// Register the file server to handle GET requests starting with /static/
+	// and strip the /static prefix before serving the files.
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
 
-	// Define routes and associate them with handler functions.
+	// Create a middleware chain for routes that require session management.
+	// The sessionManager.LoadAndSave middleware automatically loads and saves
+	// session data for each request.
+	dynamic := alice.New(app.sessionManager.LoadAndSave)
 
-	// Route for the home page.
-	// This route handles GET requests to the root path ("/") and is associated with the `home` method of the application's `application` struct.
-	mux.HandleFunc("GET /{$}", app.home)
+	// Register application routes with their corresponding handler functions:
 
-	// This route handles GET requests to "/snippet/view/{id}" where "{id}" is a dynamic segment representing the snippet's unique identifier. It is associated with the `snippetView` method of the application's `application` struct.
-	mux.HandleFunc("GET /snippet/view/{id}", app.snippetView)
+	// Home page route - handles GET requests to the root URL ("/")
+	mux.Handle("GET /{$}", dynamic.ThenFunc(app.home))
 
-	// This route handles GET requests to "/snippet/create" and is associated with the `snippetCreate` method of the application's `application` struct.
-	mux.HandleFunc("GET /snippet/create", app.snippetCreate)
+	// Snippet view route - handles GET requests to view individual snippets
+	// The {id} is a dynamic URL parameter containing the snippet ID
+	mux.Handle("GET /snippet/view/{id}", dynamic.ThenFunc(app.snippetView))
 
-	// This route handles POST requests to "/snippet/create" and is associated with the `snippetCreatePost` method of the application's `application` struct.
-	mux.HandleFunc("POST /snippet/create", app.snippetCreatePost)
+	// Snippet creation form route - handles GET requests to display the
+	// snippet creation form
+	mux.Handle("GET /snippet/create", dynamic.ThenFunc(app.snippetCreate))
 
-	// Create a middleware chain using alice that includes:
-	// 1. recoverPanic: Recovers from any panic that occurs during the processing of a request.
-	// 2. logRequest: Logs details about each HTTP request.
-	// 3. commonHeaders: Adds security-related headers to outgoing responses.
+	// Snippet creation submission route - handles POST requests to process
+	// the snippet creation form submission
+	mux.Handle("POST /snippet/create", dynamic.ThenFunc(app.snippetCreatePost))
+
+	// Create a standard middleware chain that will be applied to all requests:
+	// 1. recoverPanic - recovers from panics and returns a 500 error
+	// 2. logRequest - logs details about each incoming request
+	// 3. commonHeaders - adds security-related headers to responses
 	standard := alice.New(app.recoverPanic, app.logRequest, commonHeaders)
 
-	// Apply the middleware chain to the multiplexer.
+	// Apply the standard middleware chain to the multiplexer and return
+	// the configured router.
 	return standard.Then(mux)
 }

@@ -7,9 +7,12 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"snippetbox.tomcat.net/internal/models"
 
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -30,11 +33,15 @@ import (
 //   - formDecoder: Form decoder for processing HTML form data
 //     Type: *form.Decoder
 //     Purpose: Handles form parsing and validation
+//   - sessionManager: Session manager for handling user sessions
+//     Type: *scs.SessionManager
+//     Purpose: Manages user session data including authentication state
 type application struct {
-	logger        *slog.Logger
-	snippets      *models.SnippetModel
-	templateCache map[string]*template.Template
-	formDecoder   *form.Decoder
+	logger         *slog.Logger
+	snippets       *models.SnippetModel
+	templateCache  map[string]*template.Template
+	formDecoder    *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -85,13 +92,21 @@ func main() {
 	// The decoder handles both URL-encoded and multipart form data
 	formDecoder := form.NewDecoder()
 
+	// Initialize a new session manager with MySQL storage
+	// Sessions are stored in the database with a 12-hour lifetime
+	sessionManager := scs.New()
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.Cookie.Secure = true // Only send cookies over HTTPS
+
 	// Initialize the application instance with all required dependencies
 	// This creates the central application context used throughout the program
 	app := &application{
-		logger:        logger,                       // Structured logger
-		snippets:      &models.SnippetModel{DB: db}, // Database model
-		templateCache: templateCache,                // Template cache
-		formDecoder:   formDecoder,                  // Form decoder
+		logger:         logger,                       // Structured logger
+		snippets:       &models.SnippetModel{DB: db}, // Database model
+		templateCache:  templateCache,                // Template cache
+		formDecoder:    formDecoder,                  // Form decoder
+		sessionManager: sessionManager,               // Session manager
 	}
 
 	// Log a message indicating that the server is starting
