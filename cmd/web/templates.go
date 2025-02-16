@@ -14,9 +14,20 @@ type templateData struct {
 	Snippet     models.Snippet
 	Snippets    []models.Snippet
 	Form        any
+	Flash       string
 }
 
-// newTemplateCache reads all HTML files from the UI directory and parses them into a cache of *template.Template objects.
+// newTemplateCache initializes a template cache by parsing all HTML templates from the ui/html directory.
+// It handles:
+// - Finding all page templates in ui/html/pages/
+// - Creating a new template set for each page
+// - Registering custom template functions
+// - Parsing base template and partials
+// - Storing parsed templates in a map for efficient lookup
+//
+// Returns:
+// - map[string]*template.Template: A map of template names to parsed templates
+// - error: Any error that occurred during template parsing
 func newTemplateCache() (map[string]*template.Template, error) {
 	// Initialize an empty map to store the parsed templates
 	cache := map[string]*template.Template{}
@@ -69,7 +80,14 @@ func newTemplateCache() (map[string]*template.Template, error) {
 	return cache, nil
 }
 
-// humanDate formats a time.Time object to a user-friendly string.
+// humanDate converts a time.Time value to a human-readable string format.
+// The format used is "02 Jan 2006 at 15:04" (day month year at time)
+//
+// Parameters:
+// - t: time.Time - The time value to format
+//
+// Returns:
+// - string: The formatted date string
 func humanDate(t time.Time) string {
 	return t.Format("02 Jan 2006 at 15:04")
 }

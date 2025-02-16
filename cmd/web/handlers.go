@@ -26,40 +26,32 @@ import (
 	"snippetbox.tomcat.net/internal/validator"
 )
 
-// snippetCreateForm encapsulates all data and validation state for the snippet creation form.
-// It handles form submission, validation, and error reporting.
+// snippetCreateForm represents the data structure for the snippet creation form.
+// It handles:
+// - Form data binding
+// - Field validation
+// - Error reporting
 //
 // Fields:
-//   - Title: The snippet title
-//     Type: string
-//     Tag: form:"title" (maps to HTML form field name)
+//   - Title: string - The snippet title (form:"title")
 //     Validation:
-//   - Required field
-//   - Maximum length: 100 characters
-//   - Must not be empty
-//   - Content: The snippet content
-//     Type: string
-//     Tag: form:"content" (maps to HTML form field name)
+//   - Required
+//   - Max length: 100 characters
+//   - Not blank
+//   - Content: string - The snippet content (form:"content")
 //     Validation:
-//   - Required field
-//   - Must not be empty
-//   - Expires: Number of days until the snippet expires
-//     Type: int
-//     Tag: form:"expires" (maps to HTML form field name)
+//   - Required
+//   - Not blank
+//   - Expires: int - Expiration in days (form:"expires")
 //     Validation:
-//   - Required field
-//   - Must be one of: 1, 7, or 365
-//   - Validator: Embedded validator instance
-//     Type: validator.Validator
-//     Tag: form:"-" (excluded from form binding)
-//     Purpose: Handles field validation and error collection
+//   - Required
+//   - Must be 1, 7 or 365
+//   - Validator: validator.Validator - Embedded validator (form:"-")
+//     Purpose: Manages validation errors
 //
-// The form follows these validation rules:
-// 1. All fields are required
-// 2. Title must be non-empty and ≤ 100 characters
-// 3. Content must be non-empty
-// 4. Expires must be 1, 7, or 365
-// 5. Validation errors are collected in the Validator instance
+// Usage:
+// - Used in both GET and POST handlers for snippet creation
+// - Validates form data before database insertion
 type snippetCreateForm struct {
 	Title               string `form:"title"`
 	Content             string `form:"content"`
@@ -67,42 +59,24 @@ type snippetCreateForm struct {
 	validator.Validator `form:"-"`
 }
 
-// home handles GET requests to the application's homepage (/).
-// It retrieves and displays the 5 most recent snippets.
-//
-// Security:
-//   - No authentication required
-//   - No sensitive data exposed
-//
-// Performance:
-//   - Single database query for latest snippets
-//   - Template rendering overhead
-//
-// Caching:
-//   - No caching headers set
-//   - Consider adding Cache-Control for static content
+// home handles GET requests to the root URL (/).
+// It:
+// - Fetches the latest 5 snippets from the database
+// - Renders the home page template with the snippets
 //
 // Parameters:
-//   - w: http.ResponseWriter to write the HTTP response
-//   - r: *http.Request containing the incoming HTTP request
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
 //
-// The handler follows these steps:
-// 1. Fetch latest snippets from database
-//   - Uses models.SnippetModel.Latest() method
-//   - Retrieves maximum of 5 snippets
-//
-// 2. Create template data structure
-//   - Initializes with default values
-//   - Adds snippets to data.Snippets
-//
-// 3. Render home page template
-//   - Uses application.render() helper
-//   - Template: "home.html"
-//   - Status code: 200 OK
+// Flow:
+// 1. Fetch latest snippets using SnippetModel.Latest()
+// 2. Create template data with newTemplateData()
+// 3. Add snippets to template data
+// 4. Render "home.html" template
 //
 // Error Handling:
-//   - Database errors: Returns 500 Internal Server Error
-//   - Template rendering errors: Returns 500 Internal Server Error
+// - Database errors: 500 Internal Server Error
+// - Template errors: 500 Internal Server Error
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// Get the latest 5 snippets from the database
 	snippets, err := app.snippets.Latest() // Fetch latest 5 snippets from database
@@ -120,53 +94,32 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "home.html", data)
 }
 
-// snippetView handles GET requests to view a specific snippet (/snippet/view/{id}).
-//
-// Security:
-//   - No authentication required
-//   - No sensitive data exposed
-//
-// Performance:
-//   - Single database query by primary key
-//   - Template rendering overhead
-//
-// Caching:
-//   - No caching headers set
-//   - Consider adding Cache-Control for static content
+// snippetView handles GET requests to view a specific snippet.
+// It:
+// - Extracts snippet ID from URL
+// - Fetches snippet from database
+// - Renders the view template with snippet data
 //
 // Parameters:
-//   - w: http.ResponseWriter to write the HTTP response
-//   - r: *http.Request containing the incoming HTTP request
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
 //
 // URL Parameters:
-//   - id: The unique identifier of the snippet to view
+//   - id: int - The snippet ID to view
 //
-// The handler follows these steps:
-// 1. Extract and validate snippet ID from URL
-//   - Uses strconv.Atoi() for conversion
-//   - Validates ID is positive integer
-//
-// 2. Retrieve snippet from database
-//   - Uses models.SnippetModel.Get() method
-//
+// Flow:
+// 1. Extract and validate ID from URL
+// 2. Fetch snippet using SnippetModel.Get()
 // 3. Handle database errors
-//   - If record not found: return 404
-//   - If other error: return 500
-//
-// 4. Prepare template data
-//   - Initializes with default values
-//   - Adds snippet to data.Snippet
-//
-// 5. Render view template
-//   - Uses application.render() helper
-//   - Template: "view.html"
-//   - Status code: 200 OK
+// 4. Create template data
+// 5. Add snippet to template data
+// 6. Render "view.html" template
 //
 // Error Handling:
-//   - Invalid ID format: Returns 404 Not Found
-//   - Snippet not found: Returns 404 Not Found
-//   - Database errors: Returns 500 Internal Server Error
-//   - Template rendering errors: Returns 500 Internal Server Error
+// - Invalid ID: 404 Not Found
+// - Snippet not found: 404 Not Found
+// - Database errors: 500 Internal Server Error
+// - Template errors: 500 Internal Server Error
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id")) // Convert URL parameter to integer
 	if err != nil || id < 1 {
@@ -196,39 +149,25 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "view.html", data)
 }
 
-// snippetCreate handles GET requests to display the snippet creation form (/snippet/create).
-//
-// Security:
-//   - No authentication required
-//   - No sensitive data exposed
-//
-// Performance:
-//   - No database queries
-//   - Template rendering overhead
-//
-// Caching:
-//   - No caching headers set
-//   - Consider adding Cache-Control for static content
+// snippetCreate handles GET requests to display the snippet creation form.
+// It:
+// - Initializes template data
+// - Sets default form values
+// - Renders the create form template
 //
 // Parameters:
-//   - w: http.ResponseWriter to write the HTTP response
-//   - r: *http.Request containing the incoming HTTP request
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
 //
-// The handler follows these steps:
-// 1. Create template data structure
-//   - Initializes with default values
-//   - Sets form with default expires value (365 days)
-//
-// 2. Render create form template
-//   - Uses application.render() helper
-//   - Template: "create.html"
-//   - Status code: 200 OK
+// Flow:
+// 1. Create template data
+// 2. Initialize form with default values
+// 3. Render "create.html" template
 //
 // Error Handling:
-//   - Template rendering errors: Returns 500 Internal Server Error
+// - Template errors: 500 Internal Server Error
 //
-// Note: This is a GET handler that displays the form. The actual snippet creation
-// is handled by snippetCreatePost.
+// Note: The actual form submission is handled by snippetCreatePost
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	// Create a new template data structure
 	data := app.newTemplateData(r) // Initialize template data
@@ -241,79 +180,35 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "create.html", data)
 }
 
-// snippetCreatePost handles POST requests to create a new snippet (/snippet/create).
-//
-// Security:
-//   - No authentication required
-//   - No sensitive data exposed
-//
-// Performance:
-//   - Single database insert operation
-//   - Form parsing and validation overhead
-//
-// Caching:
-//   - No caching headers set
-//
-// Concurrency:
-//   - Safe for concurrent use
-//   - Database handles concurrent inserts
+// snippetCreatePost handles POST requests to create a new snippet.
+// It:
+// - Parses form data
+// - Validates input
+// - Inserts snippet into database
+// - Redirects to snippet view page
 //
 // Parameters:
-//   - w: http.ResponseWriter to write the HTTP response
-//   - r: *http.Request containing the incoming HTTP request
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
 //
-// Form Data:
-//   - title: The snippet title
-//     Type: string
-//     Validation:
-//   - Required field
-//   - Maximum length: 100 characters
-//   - Must not be empty
-//   - content: The snippet content
-//     Type: string
-//     Validation:
-//   - Required field
-//   - Must not be empty
-//   - expires: Number of days until the snippet expires
-//     Type: int
-//     Validation:
-//   - Required field
-//   - Must be one of: 1, 7, or 365
-//
-// The handler follows these steps:
-// 1. Parse form data
-//   - Uses r.ParseForm()
-//   - Handles both URL-encoded and multipart form data
-//
-// 2. Validate required fields
-//   - Title: not blank, max 100 chars
-//   - Content: not blank
-//   - Expires: must be 1, 7 or 365
-//
+// Flow:
+// 1. Parse and decode form data
+// 2. Validate form fields
 // 3. Handle validation errors
-//   - If errors exist, re-render form with error messages
-//   - Status code: 422 Unprocessable Entity
-//
-// 4. Insert new snippet into database
-//   - Uses models.SnippetModel.Insert()
-//
+// 4. Insert snippet into database
 // 5. Handle database errors
-//   - Returns 500 Internal Server Error
-//
-// 6. Redirect to new snippet's view page
-//   - Uses HTTP 303 See Other
-//   - Prevents duplicate form submissions
+// 6. Set flash message
+// 7. Redirect to new snippet's view page
 //
 // Error Handling:
-//   - Invalid form data: Returns 400 Bad Request
-//   - Validation errors: Returns 422 Unprocessable Entity
-//   - Database errors: Returns 500 Internal Server Error
-//   - Template rendering errors: Returns 500 Internal Server Error
+// - Invalid form data: 400 Bad Request
+// - Validation errors: 422 Unprocessable Entity
+// - Database errors: 500 Internal Server Error
 //
 // Returns:
-//   - On success: HTTP 303 redirect to /snippet/view/{id}
-//   - On validation error: HTTP 422 with error messages
-//   - On database error: HTTP 500 Internal Server Error
+// - Success: 303 See Other redirect to /snippet/view/{id}
+// - Validation error: 422 with error messages
+// - Database error: 500 Internal Server Error
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
 	// Initialize form struct to hold submitted data
 	var form snippetCreateForm
@@ -348,7 +243,9 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Redirect to the new snippet's view page
+	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created") // Flash message on success
+
+	// Redirect to show the new snippet
 	// Uses HTTP 303 See Other to prevent duplicate form submissions
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
