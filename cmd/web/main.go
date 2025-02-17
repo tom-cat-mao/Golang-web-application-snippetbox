@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"html/template"
@@ -17,31 +18,25 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// application represents the core application instance containing all dependencies
-// and configuration required to run the web server. It follows the dependency injection
-// pattern, making all components easily testable and replaceable.
+// application struct represents the core application instance containing all dependencies and configurations needed to run the web server.
+// It follows the dependency injection pattern, making all components easy to test and replace.
 //
-// Fields:
-//   - logger: Structured logger for application logging
+// Field descriptions:
+//   - logger: Structured logger
 //     Type: *slog.Logger
-//     Purpose: Provides consistent, structured logging with different severity levels
-//     (Info, Debug, Error, etc.) for better observability
-//   - snippets: Database model for snippet operations
+//     Purpose: Provides structured logging at different severity levels (Info, Debug, Error, etc.) to improve observability
+//   - snippets: Snippet database model
 //     Type: *models.SnippetModel
-//     Purpose: Handles all CRUD operations for snippets, abstracting database interactions
-//     and providing a clean API for business logic
-//   - templateCache: In-memory cache of parsed HTML templates
+//     Purpose: Handles all CRUD operations for snippets, abstracts database interactions, and provides a clean API for business logic
+//   - templateCache: In-memory cache for HTML templates
 //     Type: map[string]*template.Template
-//     Purpose: Improves performance by caching parsed templates, reducing disk I/O
-//     on subsequent requests. Uses template inheritance via base.html
-//   - formDecoder: Form decoder for processing HTML form data
+//     Purpose: Improves performance by caching parsed templates, reducing disk I/O for subsequent requests. Uses base.html for template inheritance
+//   - formDecoder: HTML form decoder
 //     Type: *form.Decoder
-//     Purpose: Handles form parsing and validation, supporting both URL-encoded
-//     and multipart form data with custom validation rules
-//   - sessionManager: Session manager for handling user sessions
+//     Purpose: Handles form parsing and validation, supports URL-encoded and multipart form data, allows custom validation rules
+//   - sessionManager: User session manager
 //     Type: *scs.SessionManager
-//     Purpose: Manages user session data including authentication state, using
-//     MySQL as the session store for persistence and scalability
+//     Purpose: Manages user session data including authentication state, uses MySQL for session storage to enable persistence and scalability
 type application struct {
 	logger         *slog.Logger
 	snippets       *models.SnippetModel
@@ -51,42 +46,42 @@ type application struct {
 }
 
 func main() {
-	// Define a flag for the HTTP network address to listen on
+	// Define flag for HTTP network address
 	// Default: ":4000" (listen on all interfaces, port 4000)
-	// Usage: -addr=":8080" to change the listening port
+	// Usage: -addr=":8080" to change listening port
 	addr := flag.String("addr", ":4000", "HTTP network address")
 
-	// Define a flag for the MySQL data source name (DSN)
+	// Define flag for MySQL Data Source Name (DSN)
 	// Format: "username:password@protocol(address)/dbname?param=value"
 	// Default: "web:pass@/snippetbox?parseTime=true"
 	// Usage: -dsn="user:password@tcp(localhost:3306)/dbname"
 	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "MySQL data source name")
 
-	// Parse the command line flags
-	// This reads the actual values from command line arguments
+	// Parse command line flags
+	// Reads actual values from command line arguments
 	flag.Parse()
 
-	// Create a new structured logger that outputs to standard output
-	// Uses text format for human-readable logs
-	// Log level defaults to Info
+	// Create a new structured logger that writes to standard output
+	// Uses text format for human readability
+	// Default log level is Info
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	// Attempt to open a connection to the MySQL database using the provided DSN
-	// The openDB function handles both connection and ping verification
+	// Attempt to open MySQL database connection using provided DSN
+	// openDB function handles connection and ping verification
 	db, err := openDB(*dsn)
 	if err != nil {
-		// Log the error with Error level and exit the program
-		// Exit code 1 indicates a general error
+		// Log error at Error level and exit program
+		// Exit code 1 indicates general error
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
 
-	// Ensure that the database connection is closed when the main function exits
-	// This is executed even if an error occurs later in the program
+	// Ensure database connection is closed when main function exits
+	// Will execute even if subsequent errors occur
 	defer db.Close()
 
-	// Create a new template cache from all template files in the "ui/html" directory
-	// The cache improves performance by parsing templates once at startup
+	// Create new template cache from all template files in "ui/html" directory
+	// Improves performance by parsing templates once at startup
 	templateCache, err := newTemplateCache()
 	if err != nil {
 		// Log template cache initialization error and exit
@@ -94,19 +89,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize a new form decoder for processing HTML form data
-	// The decoder handles both URL-encoded and multipart form data
+	// Initialize new form decoder for handling HTML form data
+	// Decoder handles URL-encoded and multipart form data
 	formDecoder := form.NewDecoder()
 
-	// Initialize a new session manager with MySQL storage
-	// Sessions are stored in the database with a 12-hour lifetime
+	// Initialize new session manager using MySQL storage
+	// Session data is stored in database with 12-hour lifetime
 	sessionManager := scs.New()
 	sessionManager.Store = mysqlstore.New(db)
 	sessionManager.Lifetime = 12 * time.Hour
 	sessionManager.Cookie.Secure = true // Only send cookies over HTTPS
 
-	// Initialize the application instance with all required dependencies
-	// This creates the central application context used throughout the program
+	// Initialize application instance with all required dependencies
+	// Creates core application context that persists throughout the program
 	app := &application{
 		logger:         logger,                       // Structured logger
 		snippets:       &models.SnippetModel{DB: db}, // Database model
@@ -115,10 +110,19 @@ func main() {
 		sessionManager: sessionManager,               // Session manager
 	}
 
+	// Configure TLS settings for secure communication
+	// Prefers modern, secure elliptic curves for key exchange
+	tlsConfig := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
+	// Initialize HTTP server with configuration
+	// Includes address, request handler, error logging, and TLS settings
 	srv := &http.Server{
-		Addr:     *addr,
-		Handler:  app.routes(),
-		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		Addr:      *addr,                                                // Network address to listen on
+		Handler:   app.routes(),                                         // Router/mux for request handling
+		ErrorLog:  slog.NewLogLogger(logger.Handler(), slog.LevelError), // Error logger
+		TLSConfig: tlsConfig,                                            // TLS configuration for HTTPS
 	}
 
 	// Log a message indicating that the server is starting
@@ -127,6 +131,8 @@ func main() {
 
 	// Start the HTTP server on the specified address
 	// The routes() method returns the configured router/mux
+	// Start HTTPS server with TLS certificates
+	// Uses self-signed certificates for local development
 	err = srv.ListenAndServeTLS("./tls/localhost.pem", "./tls/localhost-key.pem")
 
 	// If an error occurs while starting the server, log the error and exit
