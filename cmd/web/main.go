@@ -119,10 +119,13 @@ func main() {
 	// Initialize HTTP server with configuration
 	// Includes address, request handler, error logging, and TLS settings
 	srv := &http.Server{
-		Addr:      *addr,                                                // Network address to listen on
-		Handler:   app.routes(),                                         // Router/mux for request handling
-		ErrorLog:  slog.NewLogLogger(logger.Handler(), slog.LevelError), // Error logger
-		TLSConfig: tlsConfig,                                            // TLS configuration for HTTPS
+		Addr:         *addr,                                                // Network address to listen on
+		Handler:      app.routes(),                                         // Router/mux for request handling
+		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError), // Error logger
+		TLSConfig:    tlsConfig,                                            // TLS configuration for HTTPS
+		IdleTimeout:  time.Minute,                                          // Maximum time to wait for the next request when keep-alives are enabled
+		ReadTimeout:  5 * time.Second,                                      // Maximum duration for reading the entire request, including the body
+		WriteTimeout: 10 * time.Second,                                     // Maximum duration before timing out writes of the response
 	}
 
 	// Log a message indicating that the server is starting
