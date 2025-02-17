@@ -17,25 +17,31 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// application represents the main application instance containing all dependencies
-// and configuration needed to run the web server.
+// application represents the core application instance containing all dependencies
+// and configuration required to run the web server. It follows the dependency injection
+// pattern, making all components easily testable and replaceable.
 //
 // Fields:
 //   - logger: Structured logger for application logging
 //     Type: *slog.Logger
-//     Purpose: Provides consistent logging format and levels
+//     Purpose: Provides consistent, structured logging with different severity levels
+//     (Info, Debug, Error, etc.) for better observability
 //   - snippets: Database model for snippet operations
 //     Type: *models.SnippetModel
-//     Purpose: Handles all database interactions for snippets
+//     Purpose: Handles all CRUD operations for snippets, abstracting database interactions
+//     and providing a clean API for business logic
 //   - templateCache: In-memory cache of parsed HTML templates
 //     Type: map[string]*template.Template
-//     Purpose: Improves performance by caching parsed templates
+//     Purpose: Improves performance by caching parsed templates, reducing disk I/O
+//     on subsequent requests. Uses template inheritance via base.html
 //   - formDecoder: Form decoder for processing HTML form data
 //     Type: *form.Decoder
-//     Purpose: Handles form parsing and validation
+//     Purpose: Handles form parsing and validation, supporting both URL-encoded
+//     and multipart form data with custom validation rules
 //   - sessionManager: Session manager for handling user sessions
 //     Type: *scs.SessionManager
-//     Purpose: Manages user session data including authentication state
+//     Purpose: Manages user session data including authentication state, using
+//     MySQL as the session store for persistence and scalability
 type application struct {
 	logger         *slog.Logger
 	snippets       *models.SnippetModel
@@ -109,13 +115,18 @@ func main() {
 		sessionManager: sessionManager,               // Session manager
 	}
 
+	srv := &http.Server{
+		Addr:    *addr,
+		Handler: app.routes(),
+	}
+
 	// Log a message indicating that the server is starting
 	// Includes the address the server will listen on
-	logger.Info("starting server", "addr", *addr)
+	logger.Info("starting server", "addr", srv.Addr)
 
 	// Start the HTTP server on the specified address
 	// The routes() method returns the configured router/mux
-	err = http.ListenAndServe(*addr, app.routes())
+	err = srv.ListenAndServe()
 
 	// If an error occurs while starting the server, log the error and exit
 	// This typically indicates a port conflict or permission issue
@@ -123,14 +134,20 @@ func main() {
 	os.Exit(1)
 }
 
-// openDB opens and verifies a connection to the MySQL database using the provided DSN.
+// openDB establishes and verifies a connection to the MySQL database using the provided DSN.
+// It implements proper resource cleanup in case of connection failures.
 //
 // Parameters:
 //   - dsn: Data Source Name containing connection details
 //     Format: "username:password@protocol(address)/dbname?param=value"
+//     Common parameters:
+//   - parseTime=true: Parse time.Time values from MySQL
+//   - timeout=30s: Connection timeout duration
+//   - readTimeout=30s: Read operation timeout
+//   - writeTimeout=30s: Write operation timeout
 //
 // Returns:
-//   - *sql.DB: Database connection handle
+//   - *sql.DB: Database connection handle, ready for query execution
 //   - error: Any error that occurred during connection or verification
 //
 // The function performs these steps:
@@ -139,8 +156,11 @@ func main() {
 // 3. Returns the verified connection handle
 //
 // Error Handling:
-//   - If connection fails, returns the original error
-//   - If ping fails, closes the connection and returns the ping error
+//   - If connection fails, returns the original error immediately
+//   - If ping fails, ensures proper resource cleanup by closing the connection
+//     before returning the ping error, preventing connection leaks
+//   - The returned *sql.DB handle is safe for concurrent use and manages
+//     a pool of underlying connections automatically
 func openDB(dsn string) (*sql.DB, error) {
 	// Open a new database connection using the MySQL driver
 	db, err := sql.Open("mysql", dsn)
