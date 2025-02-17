@@ -116,8 +116,9 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Addr:    *addr,
-		Handler: app.routes(),
+		Addr:     *addr,
+		Handler:  app.routes(),
+		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 
 	// Log a message indicating that the server is starting
