@@ -127,7 +127,7 @@ func main() {
 
 	// Start the HTTP server on the specified address
 	// The routes() method returns the configured router/mux
-	err = srv.ListenAndServe()
+	err = srv.ListenAndServeTLS("./tls/localhost.pem", "./tls/localhost-key.pem")
 
 	// If an error occurs while starting the server, log the error and exit
 	// This typically indicates a port conflict or permission issue
