@@ -1,27 +1,31 @@
 package validator
 
 import (
+	"regexp"
 	"slices"
 	"strings"
 	"unicode/utf8"
 )
 
-// Validator 结构体用于存储字段验证错误
-// FieldErrors 是一个 map，key 为字段名，value 为错误信息
+// EmailRX is a regular expression for validating email addresses.
+var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+
+// Validator struct holds field validation errors.
+// FieldErrors is a map where the key is the field name and the value is the error message.
 type Validator struct {
 	FieldErrors map[string]string
 }
 
-// Valid 方法检查是否有任何验证错误
-// 返回 true 如果没有错误，false 如果有错误
+// Valid method checks if there are any validation errors.
+// Returns true if there are no errors, false otherwise.
 func (v *Validator) Valid() bool {
 	return len(v.FieldErrors) == 0
 }
 
-// AddFieldError 方法添加一个字段错误到 FieldErrors map 中
-// key 为字段名，message 为错误信息
-// 如果 FieldErrors 为 nil，会先初始化
-// 如果该字段已经存在错误，则不会覆盖
+// AddFieldError method adds a field error to the FieldErrors map.
+// key is the field name, and message is the error message.
+// If FieldErrors is nil, it will be initialized first.
+// If the field already has an error, it will not be overwritten.
 func (v *Validator) AddFieldError(key, message string) {
 	if v.FieldErrors == nil {
 		v.FieldErrors = make(map[string]string)
@@ -32,31 +36,44 @@ func (v *Validator) AddFieldError(key, message string) {
 	}
 }
 
-// CheckField 方法检查字段是否通过验证
-// 如果 ok 为 false，则调用 AddFieldError 添加错误信息
-// key 为字段名，message 为错误信息
+// CheckField method checks if a field passes validation.
+// If ok is false, it calls AddFieldError to add the error message.
+// key is the field name, and message is the error message.
 func (v *Validator) CheckField(ok bool, key, message string) {
 	if !ok {
 		v.AddFieldError(key, message)
 	}
 }
 
-// NotBlank 函数检查字符串是否为空或仅包含空白字符
-// 返回 true 如果字符串不为空，false 如果为空
+// NotBlank function checks if a string is empty or contains only whitespace characters.
+// Returns true if the string is not blank, false if it is.
 func NotBlank(value string) bool {
 	return strings.TrimSpace(value) != ""
 }
 
-// MaxChars 函数检查字符串的字符数是否小于等于 n
-// 使用 utf8.RuneCountInString 来正确计算多字节字符
-// 返回 true 如果字符数 <= n，false 如果大于 n
+// MaxChars function checks if the number of characters in a string is less than or equal to n.
+// Uses utf8.RuneCountInString to correctly count multi-byte characters.
+// Returns true if the number of characters is <= n, false if it is greater than n.
 func MaxChars(value string, n int) bool {
 	return utf8.RuneCountInString(value) <= n
 }
 
-// PermittedValue 泛型函数检查值是否在允许的值列表中
-// 使用 slices.Contains 进行检查
-// 返回 true 如果值在允许列表中，false 如果不在
+// PermittedValue generic function checks if a value is in the list of permitted values.
+// Uses slices.Contains for the check.
+// Returns true if the value is in the permitted list, false otherwise.
 func PermittedValue[T comparable](value T, permittedValues ...T) bool {
 	return slices.Contains(permittedValues, value)
+}
+
+// MinChars function checks if the number of characters in a string is greater than or equal to n.
+// Uses utf8.RuneCountInString to correctly count multi-byte characters.
+// Returns true if the number of characters is >= n, false if it is less than n.
+func MinChars(value string, n int) bool {
+	return utf8.RuneCountInString(value) >= n
+}
+
+// Matches function checks if a string matches a regular expression.
+// Returns true if the string matches the regular expression, false otherwise.
+func Matches(value string, rx *regexp.Regexp) bool {
+	return rx.MatchString(value)
 }
