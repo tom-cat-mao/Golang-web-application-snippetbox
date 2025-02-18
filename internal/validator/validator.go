@@ -10,22 +10,41 @@ import (
 // EmailRX is a regular expression for validating email addresses.
 var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
-// Validator struct holds field validation errors.
-// FieldErrors is a map where the key is the field name and the value is the error message.
+// Validator struct holds validation errors for a form.
+//
+// It contains two fields:
+//   - FieldErrors:  A map to store validation errors for specific form fields.
+//     The key is the field name (string), and the value is the error message (string).
+//   - NonFieldErrors: A slice to store general form errors that are not associated with specific fields.
 type Validator struct {
-	FieldErrors map[string]string
+	NonFieldErrors []string
+	FieldErrors    map[string]string
 }
 
-// Valid method checks if there are any validation errors.
-// Returns true if there are no errors, false otherwise.
+// Valid method checks if the Validator has any errors.
+//
+// It returns true if both FieldErrors and NonFieldErrors are empty,
+// indicating no validation errors. Otherwise, it returns false.
 func (v *Validator) Valid() bool {
-	return len(v.FieldErrors) == 0
+	return len(v.FieldErrors) == 0 && len(v.NonFieldErrors) == 0
 }
 
-// AddFieldError method adds a field error to the FieldErrors map.
-// key is the field name, and message is the error message.
-// If FieldErrors is nil, it will be initialized first.
-// If the field already has an error, it will not be overwritten.
+// AddNonFieldError adds a non-field error message to the Validator.
+//
+// Use this for validation errors that are not associated with a specific form field.
+func (v *Validator) AddNonFieldError(message string) {
+	v.NonFieldErrors = append(v.NonFieldErrors, message)
+}
+
+// AddFieldError adds an error message to the FieldErrors map for a given field.
+//
+//   - If the FieldErrors map is nil, it initializes it.
+//   - It only adds the error message if no error already exists for the field,
+//     preventing duplicate error messages for the same field.
+//
+// Parameters:
+//   - key:     The name of the form field (e.g., "email", "password").
+//   - message: The validation error message to add for the field.
 func (v *Validator) AddFieldError(key, message string) {
 	if v.FieldErrors == nil {
 		v.FieldErrors = make(map[string]string)

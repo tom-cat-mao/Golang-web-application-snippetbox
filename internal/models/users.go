@@ -87,20 +87,42 @@ func (m *UserModel) Insert(name, email, password string) error {
 // Authenticate verifies user credentials and returns the user ID if valid.
 //
 // # Parameters
-// - email: User's email address
-// - password: Plain-text password to verify
+// - email: User's email address.
+// - password: Plain-text password to verify.
 //
 // # Returns
-// - int: User ID if authentication successful
+// - int: User ID if authentication successful, 0 otherwise.
 // - error: nil on success, or:
-//   - ErrInvalidCredentials if email/password don't match
-//   - Other errors for database failures
+//   - ErrInvalidCredentials if email/password don't match.
+//   - Other errors for database failures.
 //
 // # Security
-// - Uses constant-time comparison for password verification
-// - Protects against timing attacks
+// - Uses constant-time comparison for password verification to mitigate timing attacks.
 func (m *UserModel) Authenticate(email, password string) (int, error) {
-	return 0, nil
+	var id int
+	var hashedPassword []byte
+
+	stmt := "SELECT id, hashed_password FROM users WHERE email = ?"
+
+	err := m.DB.QueryRow(stmt, email).Scan(&id, &hashedPassword)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrInvalidCredentials
+		} else {
+			return 0, err
+		}
+	}
+
+	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return 0, ErrInvalidCredentials
+		} else {
+			return 0, err
+		}
+	}
+
+	return id, nil
 }
 
 // Exists checks if a user with the given ID exists in the database.

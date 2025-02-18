@@ -66,6 +66,24 @@ type userSignupForm struct {
 	validator.Validator `form:"-"`
 }
 
+// userLoginForm struct represents the form data for user login.
+// It includes fields for email and password, along with validation.
+//
+// Fields:
+//   - Email: string - User's email address (form:"email")
+//     Validation rules:
+//   - Required: Must not be empty.
+//   - Must be in valid email format.
+//   - Password: string - User's password (form:"password")
+//     Validation rules:
+//   - Required: Must not be empty.
+//   - Validator: validator.Validator - Embedded validator for form validation (form:"-")
+type userLoginForm struct {
+	Email               string `form:"email"`
+	Password            string `form:"password"`
+	validator.Validator `form:"-"`
+}
+
 // home handles GET requests to the root URL (/).
 //
 // It fetches the latest 5 snippets from the database and renders the home page
@@ -359,9 +377,8 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 }
 
 // userLogin handles GET requests to display the user login form.
-// It:
-// - Initializes template data
-// - Renders the login form template
+//
+// It initializes template data and renders the login form template.
 //
 // Parameters:
 //   - w: http.ResponseWriter - Used to write the HTTP response
@@ -374,20 +391,37 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 // Error Handling:
 // - Template errors: 500 Internal Server Error
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
-	// Display the user login form.
-	fmt.Fprintln(w, "Display a form for logging in a user..")
+	data := app.newTemplateData(r)
+	data.Form = userLoginForm{}
+	app.render(w, r, http.StatusOK, "login.html", data)
 }
 
 // userLoginPost handles POST requests to authenticate and login a user.
 // It:
-// - Parses form data
-// - Validates credentials
-// - Creates user session
-// - Redirects to home page
+// - Parses form data from the request body.
+// - Validates the user's email address and password.
+// - Authenticates the user against the database.
+// - Creates a new session for the user.
+// - Redirects the user to the home page.
 //
 // Parameters:
-//   - w: http.ResponseWriter - Used to write the HTTP response
-//   - r: *http.Request - Contains the incoming HTTP request
+//   - w: http.ResponseWriter - Used to write the HTTP response.
+//   - r: *http.Request - Contains the incoming HTTP request.
+//
+// Flow:
+// 1. Decode the form data from the request body.
+// 2. Validate the form data.
+// 3. If validation fails, re-render the login form with error messages.
+// 4. Authenticate the user against the database.
+// 5. If authentication fails, re-render the login form with an error message.
+// 6. Create a new session for the user.
+// 7. Redirect the user to the home page.
+//
+// Error Handling:
+// - Invalid form data: 400 Bad Request.
+// - Validation errors: 401 Unauthorized.
+// - Authentication errors: 401 Unauthorized.
+// - Session errors: 500 Internal Server Error.
 //
 // Flow:
 // 1. Parse and decode form data
@@ -403,8 +437,50 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 // - Validation errors: 401 Unauthorized
 // - Session errors: 500 Internal Server Error
 func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
-	// Authenticate and login the user.
-	fmt.Fprintln(w, "Authenticate and login the user...")
+	var form userLoginForm
+
+	err := app.decodePostForm(r, &form)
+
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
+
+	if !form.Valid() {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, r, http.StatusUnprocessableEntity, "login.html", data)
+		return
+	}
+
+	id, err := app.users.Authenticate(form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			form.AddNonFieldError("Email or password is incorrect")
+
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "login.html", data)
+		} else {
+			app.serverError(w, r, err)
+		}
+
+		return
+	}
+
+	err = app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
+
+	http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
 }
 
 // userLogoutPost handles POST requests to logout the current user.
