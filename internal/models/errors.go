@@ -1,17 +1,24 @@
-// Package models defines the data structures and error types used by the application's
-// data access layer. It provides common error definitions that are used throughout
-// the application's database operations.
+// Package models defines the data structures and error types for the application.
+// It provides common error definitions used throughout the application.
 package models
 
 import "errors"
 
-// ErrNoRecord is returned when a database query returns no matching records.
-// This error is typically used when attempting to fetch a specific record that
-// doesn't exist in the database.
+// ErrNoRecord is returned when a database query does not find a matching record.
 //
-// Example usage:
+// Example:
 //
 //	if errors.Is(err, models.ErrNoRecord) {
-//	    // Handle case where record was not found
+//		// Handle case where record was not found
 //	}
-var ErrNoRecord = errors.New("models: no matching record found")
+var (
+	ErrNoRecord = errors.New("models: no matching record found")
+
+	// ErrInvalidCredentials is returned when the provided credentials (e.g., password)
+	// do not match the expected value.
+	ErrInvalidCredentials = errors.New("models: invalid credentials")
+
+	// ErrDuplicateEmail is returned when attempting to create a user with an email
+	// address that already exists in the database.
+	ErrDuplicateEmail = errors.New("models: duplicate emails")
+)
