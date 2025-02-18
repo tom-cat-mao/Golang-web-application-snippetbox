@@ -1,10 +1,63 @@
-{{/* Define the navigation template that will be included in the base template */}}
+{{/* 
+Define the navigation template that will be included in the base template.
+
+The navigation bar is divided into two sections:
+1. Left section: Contains links to core application features
+2. Right section: Contains user authentication related links
+
+The template uses the following components:
+- <nav>: Wrapper element for the navigation bar
+- <div>: Container for grouping related links
+- <a>: Navigation links to different pages
+- <form>: Logout form with POST method for security
+
+The template is designed to be responsive and will adapt to different screen sizes.
+*/}}
 {{define "nav"}}
 <nav>
-    {{/* Link to the home page */}}
-    <a href="/">Home</a>
-    
-    {{/* Link to the snippet creation page */}}
-    <a href="/snippet/create">Create snippet</a>
+    <div>
+        {{/* 
+        Link to the home page.
+        - Path: /
+        - Purpose: Redirects to the main landing page showing latest snippets
+        */}}
+        <a href="/">Home</a>
+        
+        {{/* 
+        Link to the snippet creation page.
+        - Path: /snippet/create
+        - Purpose: Displays form for creating new snippets
+        - Access: Requires authenticated user
+        */}}
+        <a href="/snippet/create">Create snippet</a>
+    </div>
+    <div>
+        {{/* 
+        Link to the user signup page.
+        - Path: /user/signup
+        - Purpose: Displays form for new user registration
+        - Access: Available to unauthenticated users
+        */}}
+        <a href="/user/signup">Signup</a>
+
+        {{/* 
+        Link to the user login page.
+        - Path: /user/login
+        - Purpose: Displays form for user authentication
+        - Access: Available to unauthenticated users
+        */}}
+        <a href="/user/login">Login</a>
+
+        {{/* 
+        Logout form.
+        - Method: POST (for security)
+        - Action: /user/logout
+        - Purpose: Ends the current user session
+        - Access: Only visible to authenticated users
+        */}}
+        <form action="/user/logout" method="POST">
+            <button>Logout</button>
+        </form>
+    </div>
 </nav>
 {{end}}

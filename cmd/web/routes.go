@@ -7,49 +7,57 @@ import (
 )
 
 func (app *application) routes() http.Handler {
-	// Create a new HTTP request multiplexer (router) that will match incoming
-	// requests against registered routes and dispatch them to the appropriate
-	// handler functions.
+	// Create a new ServeMux, which is an HTTP request multiplexer. This will
+	// match incoming requests against registered routes and dispatch them to the
+	// appropriate handler function.
 	mux := http.NewServeMux()
 
-	// Set up a file server to serve static files (CSS, JS, images) from the
-	// ./ui/static/ directory. The file server will handle requests for static
-	// resources like /static/css/main.css.
+	// Create a file server which serves static files (CSS, JS, images etc.) from the ./ui/static/ directory.
+	// Notice the "ui/static" path is relative to the current working directory.
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 
-	// Register the file server to handle GET requests starting with /static/
-	// and strip the /static prefix before serving the files.
+	// Register the file server to handle GET requests that start with "/static/".
+	// For matching requests, strip the "/static" prefix before the file server looks for
+	// the file to serve.
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
 
-	// Create a middleware chain for routes that require session management.
-	// The sessionManager.LoadAndSave middleware automatically loads and saves
-	// session data for each request.
+	// Create a middleware chain containing the session management middleware.
+	// Specifically, this will:
+	// - LoadAndSave session data for the current request.
 	dynamic := alice.New(app.sessionManager.LoadAndSave)
 
-	// Register application routes with their corresponding handler functions:
+	// Register the dynamic routes (those that require session management) using
+	// the dynamic middleware chain.
 
-	// Home page route - handles GET requests to the root URL ("/")
+	// Home page
 	mux.Handle("GET /{$}", dynamic.ThenFunc(app.home))
 
-	// Snippet view route - handles GET requests to view individual snippets
-	// The {id} is a dynamic URL parameter containing the snippet ID
+	// View a specific snippet
 	mux.Handle("GET /snippet/view/{id}", dynamic.ThenFunc(app.snippetView))
 
-	// Snippet creation form route - handles GET requests to display the
-	// snippet creation form
+	// Create a new snippet form
 	mux.Handle("GET /snippet/create", dynamic.ThenFunc(app.snippetCreate))
 
-	// Snippet creation submission route - handles POST requests to process
-	// the snippet creation form submission
+	// Post a new snippet
 	mux.Handle("POST /snippet/create", dynamic.ThenFunc(app.snippetCreatePost))
 
-	// Create a standard middleware chain that will be applied to all requests:
-	// 1. recoverPanic - recovers from panics and returns a 500 error
-	// 2. logRequest - logs details about each incoming request
-	// 3. commonHeaders - adds security-related headers to responses
+	// User signup routes
+	mux.Handle("GET /user/signup", dynamic.ThenFunc(app.userSignup))
+	mux.Handle("POST /user/signup", dynamic.ThenFunc(app.userSignupPost))
+
+	// User login routes
+	mux.Handle("GET /user/login", dynamic.ThenFunc(app.userLogin))
+	mux.Handle("POST /user/login", dynamic.ThenFunc(app.userLoginPost))
+
+	// User logout route
+	mux.Handle("POST /user/logout", dynamic.ThenFunc(app.userLogoutPost))
+
+	// Create a middleware chain containing our 'standard' middleware
+	// which will be applied to every request our application receives.
 	standard := alice.New(app.recoverPanic, app.logRequest, commonHeaders)
 
-	// Apply the standard middleware chain to the multiplexer and return
-	// the configured router.
+	// Wrap the servemux with the standard middleware chain. So any HTTP
+	// requests coming in will be subject to the middleware chain before being
+	// passed to the servemux.
 	return standard.Then(mux)
 }

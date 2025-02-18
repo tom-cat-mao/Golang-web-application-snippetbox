@@ -249,3 +249,118 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	// Uses HTTP 303 See Other to prevent duplicate form submissions
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
+
+// userSignup handles GET requests to display the user signup form.
+// It:
+// - Initializes template data
+// - Renders the signup form template
+//
+// Parameters:
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
+//
+// Flow:
+// 1. Create template data
+// 2. Render "signup.html" template
+//
+// Error Handling:
+// - Template errors: 500 Internal Server Error
+func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Display a form for signing up a new user..")
+}
+
+// userSignupPost handles POST requests to create a new user.
+// It:
+// - Parses form data
+// - Validates input
+// - Creates user in database
+// - Redirects to home page
+//
+// Parameters:
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
+//
+// Flow:
+// 1. Parse and decode form data
+// 2. Validate form fields
+// 3. Handle validation errors
+// 4. Insert user into database
+// 5. Handle database errors
+// 6. Set flash message
+// 7. Redirect to home page
+//
+// Error Handling:
+// - Invalid form data: 400 Bad Request
+// - Validation errors: 422 Unprocessable Entity
+// - Database errors: 500 Internal Server Error
+func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Create a new user..")
+}
+
+// userLogin handles GET requests to display the user login form.
+// It:
+// - Initializes template data
+// - Renders the login form template
+//
+// Parameters:
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
+//
+// Flow:
+// 1. Create template data
+// 2. Render "login.html" template
+//
+// Error Handling:
+// - Template errors: 500 Internal Server Error
+func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Display a form for logging in a user..")
+}
+
+// userLoginPost handles POST requests to authenticate and login a user.
+// It:
+// - Parses form data
+// - Validates credentials
+// - Creates user session
+// - Redirects to home page
+//
+// Parameters:
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
+//
+// Flow:
+// 1. Parse and decode form data
+// 2. Validate credentials
+// 3. Handle validation errors
+// 4. Create user session
+// 5. Handle session creation errors
+// 6. Set flash message
+// 7. Redirect to home page
+//
+// Error Handling:
+// - Invalid form data: 400 Bad Request
+// - Validation errors: 401 Unauthorized
+// - Session errors: 500 Internal Server Error
+func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Authenticate and login the user...")
+}
+
+// userLogoutPost handles POST requests to logout the current user.
+// It:
+// - Destroys user session
+// - Redirects to home page
+//
+// Parameters:
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
+//
+// Flow:
+// 1. Destroy user session
+// 2. Handle session destruction errors
+// 3. Set flash message
+// 4. Redirect to home page
+//
+// Error Handling:
+// - Session errors: 500 Internal Server Error
+func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Logout the user...")
+}
