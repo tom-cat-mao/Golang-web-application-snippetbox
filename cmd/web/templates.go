@@ -8,7 +8,12 @@ import (
 	"snippetbox.tomcat.net/internal/models"
 )
 
-// templateData holds data to be used when rendering HTML templates.
+// templateData holds data to be used when rendering HTML templates. It includes:
+// - CurrentYear: The current year for displaying copyright information.
+// - Snippet: A single snippet object for displaying individual snippets.
+// - Snippets: A slice of snippet objects for displaying lists of snippets.
+// - Form: A generic type to hold form data for processing and validation.
+// - Flash: A string to display temporary messages to the user.
 type templateData struct {
 	CurrentYear int // The current year for copyright information.
 	Snippet     models.Snippet
@@ -18,16 +23,17 @@ type templateData struct {
 }
 
 // newTemplateCache initializes a template cache by parsing all HTML templates from the ui/html directory.
-// It handles:
-// - Finding all page templates in ui/html/pages/
-// - Creating a new template set for each page
-// - Registering custom template functions
-// - Parsing base template and partials
-// - Storing parsed templates in a map for efficient lookup
+// It performs the following steps:
+// 1. Finds all page templates in the ui/html/pages/ directory.
+// 2. Creates a new template set for each page found.
+// 3. Registers custom template functions to extend template capabilities.
+// 4. Parses the base template and all partial templates.
+// 5. Adds the specific page template to the set.
+// 6. Stores the parsed templates in a map for efficient lookup during rendering.
 //
 // Returns:
-// - map[string]*template.Template: A map of template names to parsed templates
-// - error: Any error that occurred during template parsing
+// - map[string]*template.Template: A map of template names to parsed templates, allowing quick access by name.
+// - error: Any error encountered during the template parsing process.
 func newTemplateCache() (map[string]*template.Template, error) {
 	// Initialize an empty map to store the parsed templates
 	cache := map[string]*template.Template{}
@@ -81,18 +87,22 @@ func newTemplateCache() (map[string]*template.Template, error) {
 }
 
 // humanDate converts a time.Time value to a human-readable string format.
-// The format used is "02 Jan 2006 at 15:04" (day month year at time)
+// This function is used to display dates in a user-friendly format throughout the application.
+// The format used is "02 Jan 2006 at 15:04", which represents day, month, year, and time.
 //
 // Parameters:
-// - t: time.Time - The time value to format
+// - t: time.Time - The time value to be formatted.
 //
 // Returns:
-// - string: The formatted date string
+// - string: The formatted date string in the specified format.
 func humanDate(t time.Time) string {
 	return t.Format("02 Jan 2006 at 15:04")
 }
 
-// functions is a template.FuncMap containing custom template functions.
+// functions is a template.FuncMap that defines custom functions available within HTML templates.
+// These functions extend the capabilities of Go's template engine, allowing for more dynamic and formatted output.
+// The map includes:
+// - "humanDate": A function to format dates in a human-readable way.
 var functions = template.FuncMap{
 	"humanDate": humanDate,
 }

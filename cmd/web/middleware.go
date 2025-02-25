@@ -8,37 +8,48 @@ import (
 // commonHeaders middleware sets various security-related headers on outgoing HTTP responses.
 func commonHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set Content-Security-Policy header for security.
+		// Set Content-Security-Policy header to enhance security by restricting the sources of content that can be loaded on the page.
+		// This policy:
+		//   - Allows loading of content only from the same origin ('self')
+		//   - Permits styles from the same origin and fonts.googleapis.com
+		//   - Allows fonts from fonts.gstatic.com
 		w.Header().Set(
 			"Content-Security-Policy",
 			"default-src 'self'; style-src 'self' fonts.googleapis.com; font-src fonts.gstatic.com",
 		)
 
-		// Set Referrer-Policy header to control how much referrer information is included in navigation requests.
+		// Set Referrer-Policy header to control the amount of referrer information sent with navigation requests.
+		// The 'origin-when-cross-origin' policy:
+		//   - Sends the full URL when navigating within the same origin
+		//   - Sends only the origin when navigating to a different origin
 		w.Header().Set(
 			"Referrer-Policy",
 			"origin-when-cross-origin",
 		)
 
-		// Set X-Content-Type-Options to prevent MIME type sniffing attacks.
+		// Set X-Content-Type-Options header to prevent MIME type sniffing attacks.
+		// The 'nosniff' value instructs the browser to respect the declared content type and not to sniff the content.
 		w.Header().Set(
 			"X-Content-Type-Options",
 			"nosniff",
 		)
 
-		// Set X-Frame-Options to prevent clickjacking attacks by disallowing the page from being framed.
+		// Set X-Frame-Options header to prevent clickjacking attacks.
+		// The 'deny' value disallows the page from being framed, enhancing security by preventing embedding in iframes.
 		w.Header().Set(
 			"X-Frame-Options",
 			"deny",
 		)
 
-		// Set X-XSS-Protection to disable browser's built-in XSS filters for compatibility with older browsers.
+		// Set X-XSS-Protection header to disable the browser's built-in XSS filters.
+		// The '0' value is used for compatibility with older browsers, ensuring consistent behavior across different environments.
 		w.Header().Set(
 			"X-XSS-Protection",
 			"0",
 		)
 
-		// Set Server header to hide the Go server version, enhancing security and privacy by not revealing the exact technology stack.
+		// Set Server header to mask the Go server version, enhancing security and privacy.
+		// By setting it to 'Go', we obscure the exact version of the server, reducing the attack surface.
 		w.Header().Set(
 			"Server",
 			"Go",
@@ -52,7 +63,12 @@ func commonHeaders(next http.Handler) http.Handler {
 // logRequest middleware logs details about each HTTP request received by the server.
 func (app *application) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract details from the incoming request
+		// Extract details from the incoming request for logging purposes.
+		// The following variables are captured:
+		//   - ip: The IP address of the client making the request
+		//   - proto: The protocol used for the request (e.g., "HTTP/1.1")
+		//   - method: The HTTP method used (e.g., "GET", "POST")
+		//   - uri: The request URI path and query string
 		var (
 			ip     = r.RemoteAddr       // IP address of the client making the request
 			proto  = r.Proto            // Protocol used for the request (e.g., "HTTP/1.1")
@@ -60,7 +76,12 @@ func (app *application) logRequest(next http.Handler) http.Handler {
 			uri    = r.URL.RequestURI() // Request URI path and query string
 		)
 
-		// Log details of the received request
+		// Log details of the received request using the application's logger.
+		// This log entry includes:
+		//   - The client's IP address
+		//   - The protocol used
+		//   - The HTTP method
+		//   - The request URI
 		app.logger.Info("received request", "ip", ip, "proto", proto, "method", method, "uri", uri)
 
 		// Call the next handler in the chain with the modified response writer and request
@@ -73,10 +94,12 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				// Set the connection to close immediately after sending the response
+				// Set the Connection header to 'close' to ensure the connection is closed immediately after sending the response.
+				// This is done to prevent further requests on the same connection after a panic occurs.
 				w.Header().Set("Connection", "close")
 
-				// Log the error using the application's logger
+				// Log the error using the application's logger to record the panic details.
+				// The error is wrapped in a new error to provide context about the panic.
 				app.serverError(w, r, fmt.Errorf("%s", err))
 			}
 		}()

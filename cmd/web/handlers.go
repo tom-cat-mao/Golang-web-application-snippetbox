@@ -1,21 +1,20 @@
 // Package main defines the HTTP handlers for the SnippetBox web application.
 //
-// This package contains handler functions that process incoming HTTP requests,
-// interact with application logic, and render appropriate HTTP responses.
-// Handlers are responsible for:
-//   - Request routing and processing
-//   - Input data validation and form handling
-//   - Rendering HTML templates
-//   - Managing user sessions and authentication
-//   - Error handling and logging
+// This package contains handler functions that manage the core functionality of the application,
+// including snippet management, user authentication, and session management. Each handler:
+//   - Processes incoming HTTP requests
+//   - Validates and sanitizes input data
+//   - Interacts with the application's business logic and data models
+//   - Renders HTML templates or redirects to other routes
+//   - Manages user sessions and authentication
+//   - Handles errors and logs them for debugging and monitoring
 //
-// The handlers in this package adhere to RESTful principles and promote a
-// separation of concerns. Each handler focuses on a specific route and follows
-// a consistent request processing pattern:
-//  1. Parse and validate request input (parameters, form data, etc.).
-//  2. Execute the necessary business logic (e.g., database interactions).
-//  3. Handle any errors that occur during processing.
-//  4. Construct and send the appropriate HTTP response (e.g., HTML, redirects).
+// The handlers adhere to RESTful principles, promoting a clear separation of concerns.
+// They follow a consistent processing pattern:
+//  1. Parse and validate request input (parameters, form data, etc.)
+//  2. Execute business logic, often involving database operations
+//  3. Handle errors, providing appropriate feedback to the user
+//  4. Construct and send HTTP responses, including HTML, JSON, or redirects
 package main
 
 import (
