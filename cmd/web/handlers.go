@@ -483,23 +483,39 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 }
 
 // userLogoutPost handles POST requests to logout the current user.
-// It:
-// - Destroys user session
-// - Redirects to home page
+// It performs the following operations:
+// - Renews the session token to prevent session fixation attacks. This is important because:
+//   - Session fixation attacks occur when an attacker fixes a user's session ID before they log in.
+//   - By renewing the session token upon logout, we ensure that the session ID used during the logged-in state is invalidated.
+//   - This prevents an attacker from using the old session ID to gain unauthorized access after the user logs out.
+//
+// - Removes the 'authenticatedUserID' from the session
+// - Sets a flash message indicating successful logout
+// - Redirects the user to the home page ('/')
 //
 // Parameters:
 //   - w: http.ResponseWriter - Used to write the HTTP response
 //   - r: *http.Request - Contains the incoming HTTP request
 //
 // Flow:
-// 1. Destroy user session
-// 2. Handle session destruction errors
-// 3. Set flash message
-// 4. Redirect to home page
+// 1. Renew the session token
+// 2. Remove 'authenticatedUserID' from the session
+// 3. Set a flash message
+// 4. Redirect to the home page ('/')
 //
 // Error Handling:
-// - Session errors: 500 Internal Server Error
+// - Session errors during token renewal or user ID removal: 500 Internal Server Error
 func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 	// Logout the user.
-	fmt.Fprintln(w, "Logout the user...")
+	err := app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.sessionManager.Remove(r.Context(), "authenticatedUserID")
+
+	app.sessionManager.Put(r.Context(), "flash", "You've been logged out successfully")
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
