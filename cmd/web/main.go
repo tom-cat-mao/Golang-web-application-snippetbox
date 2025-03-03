@@ -122,7 +122,7 @@ func main() {
 	// The routes() method returns the configured router/mux.
 	// Start HTTPS server with TLS certificates.
 	// Uses self-signed certificates for local development.
-	err = srv.ListenAndServeTLS("./tls/localhost.pem", "./tls/localhost-key.pem")
+	err = srv.ListenAndServeTLS("./tls/localhost+2.pem", "./tls/localhost+2-key.pem")
 
 	// If an error occurs while starting the server, log the error and exit.
 	// This typically indicates a port conflict or permission issue.

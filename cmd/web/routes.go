@@ -21,6 +21,7 @@ func (app *application) routes() http.Handler {
 	// the file to serve.
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
 
+	// Unprotected application routes using the "dynamic" middleware chain.
 	// Create a middleware chain containing the session management middleware.
 	// Specifically, this will:
 	// - LoadAndSave session data for the current request.
@@ -35,12 +36,6 @@ func (app *application) routes() http.Handler {
 	// View a specific snippet
 	mux.Handle("GET /snippet/view/{id}", dynamic.ThenFunc(app.snippetView))
 
-	// Create a new snippet form
-	mux.Handle("GET /snippet/create", dynamic.ThenFunc(app.snippetCreate))
-
-	// Post a new snippet
-	mux.Handle("POST /snippet/create", dynamic.ThenFunc(app.snippetCreatePost))
-
 	// User signup routes
 	mux.Handle("GET /user/signup", dynamic.ThenFunc(app.userSignup))
 	mux.Handle("POST /user/signup", dynamic.ThenFunc(app.userSignupPost))
@@ -49,8 +44,18 @@ func (app *application) routes() http.Handler {
 	mux.Handle("GET /user/login", dynamic.ThenFunc(app.userLogin))
 	mux.Handle("POST /user/login", dynamic.ThenFunc(app.userLoginPost))
 
+	// Protected (authenticated-only) application routes, using a new "protected"
+	// middleware chain which includes the requireAuthentication middleware.
+	protected := dynamic.Append(app.requireAuthentication)
+
+	// Create a new snippet form
+	mux.Handle("GET /snippet/create", protected.ThenFunc(app.snippetCreate))
+
+	// Post a new snippet
+	mux.Handle("POST /snippet/create", protected.ThenFunc(app.snippetCreatePost))
+
 	// User logout route
-	mux.Handle("POST /user/logout", dynamic.ThenFunc(app.userLogoutPost))
+	mux.Handle("POST /user/logout", protected.ThenFunc(app.userLogoutPost))
 
 	// Create a middleware chain containing our 'standard' middleware
 	// which will be applied to every request our application receives.

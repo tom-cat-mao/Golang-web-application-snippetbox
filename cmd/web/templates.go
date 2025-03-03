@@ -14,12 +14,14 @@ import (
 // - Snippets: A slice of snippet objects for displaying lists of snippets.
 // - Form: A generic type to hold form data for processing and validation.
 // - Flash: A string to display temporary messages to the user.
+// - IsAuthenticated: A boolen to verify if it is authenticated
 type templateData struct {
-	CurrentYear int // The current year for copyright information.
-	Snippet     models.Snippet
-	Snippets    []models.Snippet
-	Form        any
-	Flash       string
+	CurrentYear     int // The current year for copyright information.
+	Snippet         models.Snippet
+	Snippets        []models.Snippet
+	Form            any
+	Flash           string
+	IsAuthenticated bool
 }
 
 // newTemplateCache initializes a template cache by parsing all HTML templates from the ui/html directory.

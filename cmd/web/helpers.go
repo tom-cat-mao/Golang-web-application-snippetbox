@@ -102,6 +102,7 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 // newTemplateData creates and initializes a templateData struct with:
 // - Current year for copyright information
 // - Flash messages from session
+// - Authentiacated status
 //
 // Parameters:
 //   - r: *http.Request - Contains the incoming HTTP request
@@ -113,8 +114,9 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 // the base data structure that will be passed to templates
 func (app *application) newTemplateData(r *http.Request) templateData {
 	return templateData{
-		CurrentYear: time.Now().Year(),
-		Flash:       app.sessionManager.PopString(r.Context(), "flash"),
+		CurrentYear:     time.Now().Year(),
+		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
+		IsAuthenticated: app.isAuthenticated(r),
 	}
 }
 
@@ -153,6 +155,8 @@ func (app *application) decodePostForm(r *http.Request, dst any) error {
 	return nil
 }
 
+// return true if the current request is from an authenticated user, otherwise
+// return false
 func (app *application) isAuthenticated(r *http.Request) bool {
 	return app.sessionManager.Exists(r.Context(), "authenticatedUserID")
 }

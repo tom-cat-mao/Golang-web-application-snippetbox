@@ -108,3 +108,27 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+// use middleware to control if someone try to create a script without authentication
+// if access to the create page without authentication
+// it will be redirected to the login page
+// outherwise go to the next handler and clean the cache
+func (app *application) requireAuthentication(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// if the user is not authenticated, redirect them to the login page and
+		// return from the middleware chain so that no subsequent handlers in
+		// the chain are executed
+		if !app.isAuthenticated(r) {
+			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+			return
+		}
+
+		// Otherwise set the "Cache-Control: nostore" so that pages
+		// require authentication are not stored in the users browser cache (or
+		// other intermediary cache)
+		w.Header().Add("Cache-Control", "nostore")
+
+		// And call the next handler in the chain
+		next.ServeHTTP(w, r)
+	})
+}
