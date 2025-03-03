@@ -157,8 +157,14 @@ func (app *application) decodePostForm(r *http.Request, dst any) error {
 	return nil
 }
 
+// check the request context to determine if a user is authenticated or not
 // return true if the current request is from an authenticated user, otherwise
 // return false
 func (app *application) isAuthenticated(r *http.Request) bool {
-	return app.sessionManager.Exists(r.Context(), "authenticatedUserID")
+	isAuthenicated, ok := r.Context().Value(isAuthenticatedContextKey).(bool)
+	if !ok {
+		return false
+	}
+
+	return isAuthenicated
 }

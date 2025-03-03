@@ -26,7 +26,8 @@ func (app *application) routes() http.Handler {
 	// Specifically, this will:
 	// - LoadAndSave session data for the current request.
 	// - noSurf function middleware to protect from CSRD attack
-	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf)
+	// - app.authenticate check if it is authenticated
+	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
 
 	// Register the dynamic routes (those that require session management) using
 	// the dynamic middleware chain.
