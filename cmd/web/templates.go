@@ -22,6 +22,7 @@ type templateData struct {
 	Form            any
 	Flash           string
 	IsAuthenticated bool
+	CSRFToken       string // a CSRFToken field
 }
 
 // newTemplateCache initializes a template cache by parsing all HTML templates from the ui/html directory.

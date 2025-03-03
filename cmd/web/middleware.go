@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/justinas/nosurf"
 )
 
 // commonHeaders middleware sets various security-related headers on outgoing HTTP responses.
@@ -131,4 +133,17 @@ func (app *application) requireAuthentication(next http.Handler) http.Handler {
 		// And call the next handler in the chain
 		next.ServeHTTP(w, r)
 	})
+}
+
+// Create a NoSurf middlerware function which uses a customized CSRF cookie with
+// the Secure, Path and HttpOnly attributes set
+func noSurf(next http.Handler) http.Handler {
+	csrHandler := nosurf.New(next)
+	csrHandler.SetBaseCookie(http.Cookie{
+		HttpOnly: true,
+		Path:     "/",
+		Secure:   true,
+	})
+
+	return csrHandler
 }

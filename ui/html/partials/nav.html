@@ -33,6 +33,8 @@ Home page link.
         <!-- if is authentication add logout button -->
         {{if .IsAuthenticated}}
             <form action="/user/logout" method="POST" >
+            <!-- CSRF token -->
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
                 {{/*
                 Logout functionality.
                 - Method: POST for enhanced security

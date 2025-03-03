@@ -4,6 +4,8 @@
 {{/* Main content section */}}
 {{define "main"}}
 <form action="/snippet/create" method="POST">
+    <!-- CSRF token -->
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
     {{/* Title input field */}}
     <div>
         <label>Title:</label>
