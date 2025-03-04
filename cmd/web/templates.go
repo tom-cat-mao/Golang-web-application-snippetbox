@@ -2,10 +2,12 @@ package main
 
 import (
 	"html/template"
+	"io/fs"
 	"path/filepath"
 	"time"
 
 	"snippetbox.tomcat.net/internal/models"
+	"snippetbox.tomcat.net/ui"
 )
 
 // templateData holds data to be used when rendering HTML templates. It includes:
@@ -41,8 +43,11 @@ func newTemplateCache() (map[string]*template.Template, error) {
 	// Initialize an empty map to store the parsed templates
 	cache := map[string]*template.Template{}
 
-	// Use filepath.Glob to find all .html files in the ./ui/html/pages/ directory
-	pages, err := filepath.Glob("./ui/html/pages/*.html")
+	// Use fs.Glob() to get a slice of all filepaths in the ui.Files embedded
+	// filesystem which match the pattern `html/pages/*.html", This essentially`
+	// gives us a slice of all the 'page' templates for the application, just
+	// like before
+	pages, err := fs.Glob(ui.Files, "html/pages/*.html")
 	if err != nil {
 		return nil, err
 	}
@@ -52,38 +57,23 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		// Extract the base name of the file (filename without path)
 		name := filepath.Base(page)
 
-		// Create a new template object with the extracted filename and register custom functions
-		ts, err := template.New(name).Funcs(functions).ParseFiles("./ui/html/base.html")
-		if err != nil {
-			return nil, err
+		// Create a slice containing the filepath patterns for the templates we
+		// want to parse.
+		patterns := []string{
+			"html/base.html",
+			"html/partials/*.html",
+			page,
 		}
 
-		// Add all partial templates to the template set
-		ts, err = ts.ParseGlob("./ui/html/partials/*.html")
-		if err != nil {
-			return nil, err
-		}
-
-		// Add the specific page template to the template set
-		ts, err = ts.ParseFiles(page)
+		// Use ParseFS() instead of ParseFile() to parse the template files
+		// from the ui.Files embedded filesystem.
+		ts, err := template.New(name).Funcs(functions).ParseFS(ui.Files, patterns...)
 		if err != nil {
 			return nil, err
 		}
 
 		// Store the parsed template in the cache with its name as the key
 		cache[name] = ts
-
-		// Collect a list of template files to include in this page template
-		// files := []string{
-		// 	"./ui/html/base.html",         // Base layout for the application
-		// 	"./ui/html/partials/nav.html", // Navigation partial
-		// 	page,                          // Specific page template
-		// }
-
-		// ts, err := template.ParseFiles(files...)
-		// if err != nil {
-		// 	return nil, err
-		// }
 	}
 
 	return cache, nil

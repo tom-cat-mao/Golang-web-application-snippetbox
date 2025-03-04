@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/justinas/alice"
+	"snippetbox.tomcat.net/ui"
 )
 
 func (app *application) routes() http.Handler {
@@ -14,12 +15,13 @@ func (app *application) routes() http.Handler {
 
 	// Create a file server which serves static files (CSS, JS, images etc.) from the ./ui/static/ directory.
 	// Notice the "ui/static" path is relative to the current working directory.
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
+	// fileServer := http.FileServer(http.Dir("./ui/static/"))
 
-	// Register the file server to handle GET requests that start with "/static/".
-	// For matching requests, strip the "/static" prefix before the file server looks for
-	// the file to serve.
-	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
+	// Use the http.FileServerFS() function to create a HTTP handler which
+	// serves the embedded files in ui.Files. It's important to note that our
+	// static files are contained in the "static" folder of the ui.Files
+	// embedded filesystem.
+	mux.Handle("GET /static/", http.FileServerFS(ui.Files))
 
 	// Unprotected application routes using the "dynamic" middleware chain.
 	// Create a middleware chain containing the session management middleware.
