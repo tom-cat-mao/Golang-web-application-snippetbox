@@ -89,7 +89,13 @@ func newTemplateCache() (map[string]*template.Template, error) {
 // Returns:
 // - string: The formatted date string in the specified format.
 func humanDate(t time.Time) string {
-	return t.Format("02 Jan 2006 at 15:04")
+	// Return the empty string if time has zero value.
+	if t.IsZero() {
+		return ""
+	}
+
+	// Convert the time to UTC before formatting it.
+	return t.UTC().Format("02 Jan 2006 at 15:04")
 }
 
 // functions is a template.FuncMap that defines custom functions available within HTML templates.
