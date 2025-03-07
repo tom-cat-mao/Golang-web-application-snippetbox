@@ -23,6 +23,9 @@ func (app *application) routes() http.Handler {
 	// embedded filesystem.
 	mux.Handle("GET /static/", http.FileServerFS(ui.Files))
 
+	// Add a new GET /ping route.
+	mux.HandleFunc("GET /ping", ping)
+
 	// Unprotected application routes using the "dynamic" middleware chain.
 	// Create a middleware chain containing the session management middleware.
 	// Specifically, this will:
