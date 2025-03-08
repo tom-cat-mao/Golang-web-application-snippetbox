@@ -23,11 +23,11 @@ import (
 // This struct promotes dependency injection, making components easily testable and replaceable.
 type application struct {
 	logger         *slog.Logger                  // Structured logger for consistent logging.
-	snippets       *models.SnippetModel          // Snippet database model for managing snippets.
+	snippets       models.SnippetModelInterface  // Changed to interface type
 	templateCache  map[string]*template.Template // In-memory cache for parsed HTML templates.
 	formDecoder    *form.Decoder                 // HTML form decoder for processing form data.
 	sessionManager *scs.SessionManager           // User session manager for handling user sessions.
-	users          *models.UserModel             // User database model for managing users.
+	users          models.UserModelInterface     // Changed to interface type
 }
 
 func main() {

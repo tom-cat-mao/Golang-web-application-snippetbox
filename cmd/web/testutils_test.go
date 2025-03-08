@@ -8,13 +8,40 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/alexedwards/scs/v2"
+	"github.com/go-playground/form/v4"
+	"snippetbox.tomcat.net/internal/models/mocks"
 )
 
-// Create a newTestApplication helper which returns an instance of out
-// application struct containing mocked dependencies.
+// newTestApplication initializes an application instance for testing, injecting
+// mocked dependencies (SnippetModel and UserModel) to isolate tests from the real database layer.
 func newTestApplication(t *testing.T) *application {
+	// Initialize template cache to avoid repeated parsing of templates during tests
+	// This helps prevent 'template not found' errors and improves test performance
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Initialize form decoder to handle form submissions in tests
+	// Required for parsing URL-encoded form data from POST requests
+	formDecoder := form.NewDecoder()
+
+	// Configure session manager with test-appropriate settings
+	// Uses secure cookies and a 12-hour lifetime to match production-like behavior
+	sessionManager := scs.New()
+	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.Cookie.Secure = true
+
 	return &application{
-		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		logger:         slog.New(slog.NewTextHandler(io.Discard, nil)),
+		snippets:       &mocks.SnippetModel{}, // Now compatible via interface
+		users:          &mocks.UserModel{},    // Now compatible via interface
+		templateCache:  templateCache,
+		formDecoder:    formDecoder,
+		sessionManager: sessionManager,
 	}
 }
 
