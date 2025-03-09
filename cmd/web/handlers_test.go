@@ -1,13 +1,37 @@
 package main
 
 import (
+	"html"
 	"io"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"testing"
 
 	"snippetbox.tomcat.net/internal/assert"
 )
+
+// Define a regular expression which captures the CSRF token value from
+// the HTML for our user signup page.
+var csrfTokenRX = regexp.MustCompile(`<input type="hidden" name="csrf_token" value="(.+)">`)
+
+// extractCSRFToken is a helper function that extracts a CSRF token from
+// the given HTML body using a regular expression. It takes a testing.T
+// instance and the HTML body as input, and returns the extracted token
+// as a string. If no token is found, the test will be marked as failed
+// and execution will stop via t.Fatal().
+func extractCSRFToken(t *testing.T, body string) string {
+	// Use the FindStringSubmatch method to extract the token from the HTML body
+	// Note that this returns an array with the entire matched pattern in the
+	// first position, and the values of any captured data in the subsequent
+	// positions.
+	matches := csrfTokenRX.FindStringSubmatch(body)
+	if len(matches) < 2 {
+		t.Fatal("no csrf token found in body")
+	}
+
+	return html.UnescapeString(matches[1])
+}
 
 func TestPing(t *testing.T) {
 	// Create a new instance of our application struct.
@@ -88,4 +112,29 @@ func TestSnippetView(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestUserSignup tests the user signup handler.
+// It verifies that the signup form is returned with a valid CSRF token,
+// which is required for form submission. The test:
+// 1. Creates a new test application and server
+// 2. Makes GET request to /user/signup
+// 3. Extracts CSRF token from response body
+// 4. Logs token for debugging purposes (but doesn't validate it here)
+func TestUserSignup(t *testing.T) {
+	// Create the application struct containing our mocked dependencies and set
+	// up the test server for running an end-to-end test.
+	app := newTestApplication(t)
+	ts := newTestServer(t, app.routes())
+	defer ts.server.Close()
+
+	// Make a GET /user/signup request and then extract the CSRF token from the
+	// response body
+	_, _, body := ts.get(t, "/user/signup")
+	csrfToken := extractCSRFToken(t, body)
+
+	// Log the CSRF token value in our test output using the t.Logf() function
+	// The t.Logf() function works in the same way as fmt.Printf(), but writes
+	// the provided message to the test output.
+	t.Logf("CSRF token is: %q", csrfToken)
 }
