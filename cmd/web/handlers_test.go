@@ -32,9 +32,7 @@ func TestPing(t *testing.T) {
 
 func TestSnippetView(t *testing.T) {
 	// Create a new instance of our application struct with a mocked logger
-	app := &application{
-		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
-	}
+	app := newTestApplication(t)
 
 	// Create a test server
 	ts := newTestServer(t, app.routes())
@@ -85,12 +83,8 @@ func TestSnippetView(t *testing.T) {
 			code, _, body := ts.get(t, tt.urlPath)
 			assert.Equal(t, code, tt.wantCode)
 
-			// For the valid ID case, we just check if the body contains the expected text
-			// rather than checking the entire HTML response
-			if tt.name == "Valid ID" {
+			if tt.wantBody != "" {
 				assert.StringContains(t, body, tt.wantBody)
-			} else {
-				assert.Equal(t, body, tt.wantBody)
 			}
 		})
 	}

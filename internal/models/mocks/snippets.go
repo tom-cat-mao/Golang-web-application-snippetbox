@@ -21,7 +21,7 @@ var mockSnippet = models.Snippet{
 	Title:   "An old silent pond",
 	Content: "An old silent pond...",
 	Created: time.Now(),
-	Expires: time.Now().AddDate(0, 0, 1),
+	Expires: time.Now(),
 }
 
 type SnippetModel struct{}

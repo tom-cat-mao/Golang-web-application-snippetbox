@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+// SnippetModelInterface defines the contract for snippet data operations
+type SnippetModelInterface interface {
+	Insert(title string, content string, expires int) (int, error)
+	Get(id int) (Snippet, error)
+	Latest() ([]Snippet, error)
+}
+
 // Snippet represents a single snippet in the database.
 // It contains the snippet's ID, title, content, creation time, and expiration time.
 type Snippet struct {
@@ -14,13 +21,6 @@ type Snippet struct {
 	Content string    // Content of the snippet
 	Created time.Time // Time when the snippet was created
 	Expires time.Time // Time when the snippet will expire
-}
-
-// SnippetModelInterface defines the contract for snippet data operations
-type SnippetModelInterface interface {
-	Insert(title string, content string, expires int) (int, error)
-	Get(id int) (Snippet, error)
-	Latest() ([]Snippet, error)
 }
 
 // SnippetModel wraps a sql.DB connection pool and implements SnippetModelInterface
