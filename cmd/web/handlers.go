@@ -145,6 +145,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 // - Database errors: 500 Internal Server Error
 // - Template errors: 500 Internal Server Error
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
+	// Extract and convert the snippet ID from the URL parameter
 	id, err := strconv.Atoi(r.PathValue("id")) // Convert URL parameter to integer
 	if err != nil || id < 1 {
 		// If the id parameter is invalid or conversion fails, return 404 Not Found
@@ -519,6 +520,43 @@ func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// about handles GET requests to the /about endpoint.
+// It performs the following operations:
+// - Creates a new template data structure populated with common data
+// - Renders the about.html template with a 200 OK status
+//
+// Parameters:
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
+//
+// Flow:
+// 1. Create new template data using application's newTemplateData method
+// 2. Render the about.html template with the prepared data
+//
+// Template:
+// - Uses ui/html/pages/about.html template
+// - Displays static content about the application
+func (app *application) about(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+	app.render(w, r, http.StatusOK, "about.html", data)
+}
+
+// ping handles GET requests to the /ping endpoint.
+// It's a simple health check endpoint that:
+// - Returns a 200 OK status
+// - Writes "OK" as the response body
+//
+// Parameters:
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
+//
+// Flow:
+// 1. Write "OK" as the response body
+// 2. Implicitly returns 200 OK status
+//
+// Usage:
+// - Used for health checks and monitoring
+// - Verifies that the application is running and responding to requests
 func ping(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }

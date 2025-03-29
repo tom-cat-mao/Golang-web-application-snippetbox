@@ -22,6 +22,7 @@ import (
 // It holds all the dependencies and configurations required to run the web server.
 // This struct promotes dependency injection, making components easily testable and replaceable.
 type application struct {
+	debug          bool
 	logger         *slog.Logger                  // Structured logger for consistent logging.
 	snippets       models.SnippetModelInterface  // Changed to interface type
 	templateCache  map[string]*template.Template // In-memory cache for parsed HTML templates.
@@ -41,6 +42,8 @@ func main() {
 	// Default: "web:pass@/snippetbox?parseTime=true".
 	// Usage: -dsn="user:password@tcp(localhost:3306)/dbname".
 	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "MySQL data source name")
+
+	debug := flag.Bool("debug", false, "Enable debug mode")
 
 	// Parse command-line flags.
 	// This reads the actual values provided when the program is executed.
@@ -88,6 +91,7 @@ func main() {
 	// Initialize the application instance with all required dependencies.
 	// This creates the core application context that persists throughout the program.
 	app := &application{
+		debug:          *debug,
 		logger:         logger,                       // Structured logger.
 		snippets:       &models.SnippetModel{DB: db}, // Snippet database model.
 		templateCache:  templateCache,                // Template cache.

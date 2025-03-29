@@ -149,6 +149,14 @@ func noSurf(next http.Handler) http.Handler {
 	return csrHandler
 }
 
+// authenticate is a middleware function that checks if a user is authenticated
+// by verifying the presence of a valid user ID in the session. It:
+// - Retrieves the authenticatedUserID from the session
+// - If no ID is found, continues to the next handler
+// - If an ID is found, checks if the user exists in the database
+// - If the user exists, adds authentication context to the request
+// - Handles database errors appropriately
+// - Continues to the next handler in the chain
 func (app *application) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Retrieve the authenticatedUserID value from the session using the
