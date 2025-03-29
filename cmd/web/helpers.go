@@ -33,7 +33,18 @@ func (app *application) serverError(w http.ResponseWriter, r *http.Request, err 
 	)
 
 	// Log the error with additional details such as HTTP method and URI, along with a stack trace.
-	app.logger.Error(err.Error(), "method", method, "uri", uri, "trace", trace)
+	app.logger.Error(err.Error(), "method", method, "uri", uri)
+
+	// If debug mode is enabled, show detailed error information to the client
+	// including the error message and stack trace. This is useful during development
+	// but should never be enabled in production as it could expose sensitive information.
+	if app.debug {
+		// Combine the error message and stack trace into a single string
+		body := fmt.Sprintf("%s\n%s", err, trace)
+		// Send the detailed error information to the client with a 500 status code
+		http.Error(w, body, http.StatusInternalServerError)
+		return
+	}
 
 	// Send a 500 Internal Server Error response to the client.
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
