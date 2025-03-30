@@ -64,6 +64,11 @@ func (m *UserModel) Get(id int) (models.User, error) {
 	}
 }
 
+// PasswordUpdate mocks the password update functionality.
+// It simulates two scenarios:
+// - If the ID is 1 and current_password matches "pa$$word", it returns nil to simulate a successful update
+// - If the ID is 1 but current_password doesn't match, it returns ErrInvalidCredentials
+// - For any other ID, it returns ErrNoRecord to simulate a non-existent user
 func (m *UserModel) PasswordUpdate(id int, current_password, new_password string) error {
 	if id == 1 {
 		if current_password != "pa$$word" {

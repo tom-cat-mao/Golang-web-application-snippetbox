@@ -10,7 +10,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// UserModelInterface defines the contract for user data operations
+// UserModelInterface defines the interface for user-related database operations.
+// It specifies the methods required for user management, including:
+// - User creation and authentication
+// - User existence verification
+// - User data retrieval
+// - Password updates
 type UserModelInterface interface {
 	Insert(name, email, password string) error
 	Authenticate(email, password string) (int, error)
