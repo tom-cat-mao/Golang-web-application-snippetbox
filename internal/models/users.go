@@ -15,6 +15,7 @@ type UserModelInterface interface {
 	Insert(name, email, password string) error
 	Authenticate(email, password string) (int, error)
 	Exists(id int) (bool, error)
+	Get(id int) (User, error)
 }
 
 // User represents a registered user in the system.
@@ -147,4 +148,30 @@ func (m *UserModel) Exists(id int) (bool, error) {
 
 	err := m.DB.QueryRow(stmt, id).Scan(&exists)
 	return exists, err
+}
+
+// Get retrieves a user by their ID from the database.
+//
+// # Parameters
+// - id: The ID of the user to retrieve
+//
+// # Returns
+// - User: The retrieved user if found
+// - error: nil on success, or:
+//   - ErrNoRecord if no user with the given ID exists
+//   - Other errors for database failures
+func (m *UserModel) Get(id int) (User, error) {
+	var user User
+	stmt := "SELECT id, name, email, created FROM users WHERE id = ?"
+
+	err := m.DB.QueryRow(stmt, id).Scan(&user.ID, &user.Name, &user.Email, &user.Created)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return User{}, ErrNoRecord
+		} else {
+			return User{}, err
+		}
+	}
+
+	return user, nil
 }

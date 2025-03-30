@@ -1,6 +1,10 @@
 package mocks
 
-import "snippetbox.tomcat.net/internal/models"
+import (
+	"time"
+
+	"snippetbox.tomcat.net/internal/models"
+)
 
 type UserModel struct{}
 
@@ -39,5 +43,23 @@ func (m *UserModel) Exists(id int) (bool, error) {
 		return true, nil
 	default:
 		return false, nil
+	}
+}
+
+// Get mocks the retrieval of a user by ID.
+// It simulates two scenarios:
+// - If the ID is 1, returns a mock user with ID 1, email "alice@example.com", name "Alice", and current timestamp
+// - For any other ID, returns an empty User and ErrNoRecord to simulate a non-existent user
+func (m *UserModel) Get(id int) (models.User, error) {
+	switch id {
+	case 1:
+		return models.User{
+			ID:      1,
+			Email:   "alice@example.com",
+			Name:    "Alice",
+			Created: time.Now(),
+		}, nil
+	default:
+		return models.User{}, models.ErrNoRecord
 	}
 }

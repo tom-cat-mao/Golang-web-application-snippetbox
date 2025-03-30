@@ -38,6 +38,7 @@ About page link.
     <div>
         <!-- if is authentication add logout button -->
         {{if .IsAuthenticated}}
+            <a href="/account/view">Account</a>
             <form action="/user/logout" method="POST" >
             <!-- CSRF token -->
             <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">

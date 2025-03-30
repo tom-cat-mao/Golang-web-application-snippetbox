@@ -11,12 +11,14 @@ import (
 )
 
 // templateData holds data to be used when rendering HTML templates. It includes:
-// - CurrentYear: The current year for displaying copyright information.
-// - Snippet: A single snippet object for displaying individual snippets.
-// - Snippets: A slice of snippet objects for displaying lists of snippets.
-// - Form: A generic type to hold form data for processing and validation.
-// - Flash: A string to display temporary messages to the user.
-// - IsAuthenticated: A boolen to verify if it is authenticated
+// - CurrentYear: The current year for displaying copyright information
+// - Snippet: A single snippet object for displaying individual snippets
+// - Snippets: A slice of snippet objects for displaying lists of snippets
+// - Form: A generic type to hold form data for processing and validation
+// - Flash: A string to display temporary messages to the user
+// - IsAuthenticated: Boolean indicating if the user is authenticated
+// - CSRFToken: Cross-Site Request Forgery token for form security
+// - User: The currently authenticated user's data
 type templateData struct {
 	CurrentYear     int // The current year for copyright information.
 	Snippet         models.Snippet
@@ -24,7 +26,8 @@ type templateData struct {
 	Form            any
 	Flash           string
 	IsAuthenticated bool
-	CSRFToken       string // a CSRFToken field
+	CSRFToken       string
+	User            models.User
 }
 
 // newTemplateCache initializes a template cache by parsing all HTML templates from the ui/html directory.

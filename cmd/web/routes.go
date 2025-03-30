@@ -67,6 +67,9 @@ func (app *application) routes() http.Handler {
 	// User logout route
 	mux.Handle("POST /user/logout", protected.ThenFunc(app.userLogoutPost))
 
+	// GET user account view
+	mux.Handle("GET /account/view", protected.ThenFunc(app.accountView))
+
 	// Create a middleware chain containing our 'standard' middleware
 	// which will be applied to every request our application receives.
 	standard := alice.New(app.recoverPanic, app.logRequest, commonHeaders)

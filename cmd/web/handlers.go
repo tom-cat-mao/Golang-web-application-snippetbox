@@ -560,3 +560,53 @@ func (app *application) about(w http.ResponseWriter, r *http.Request) {
 func ping(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
+
+// accountView handles GET requests to display the authenticated user's account information.
+// It performs the following operations:
+// 1. Retrieves the authenticated user's ID from the session
+// 2. Fetches the user's details from the database using the user ID
+// 3. Handles potential errors:
+//   - Redirects to login page if user is not found
+//   - Returns server error for other database errors
+//
+// 4. Prepares template data with the user's information
+// 5. Renders the account.html template with the user's data
+//
+// Parameters:
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
+//
+// Flow:
+// - Get user ID from session
+// - Retrieve user from database
+// - Handle errors appropriately
+// - Prepare template data
+// - Render account page
+//
+// Template:
+// - Uses ui/html/pages/account.html template
+// - Displays user's name, email, and account creation date
+func (app *application) accountView(w http.ResponseWriter, r *http.Request) {
+	// Get the authenticated user's ID from the session
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
+	// Retrieve the user's details from the database
+	user, err := app.users.Get(userID)
+	if err != nil {
+		// Handle case where user is not found
+		if errors.Is(err, models.ErrNoRecord) {
+			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+		} else {
+			// Handle other database errors
+			app.serverError(w, r, err)
+		}
+		return
+	}
+
+	// Prepare template data and add the user's information
+	data := app.newTemplateData(r)
+	data.User = user
+
+	// Render the account page template
+	app.render(w, r, http.StatusOK, "account.html", data)
+}
