@@ -397,45 +397,41 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // userLoginPost handles POST requests to authenticate and login a user.
-// It:
-// - Parses form data from the request body.
-// - Validates the user's email address and password.
-// - Authenticates the user against the database.
-// - Creates a new session for the user.
-// - Redirects the user to the home page.
+// It processes login form submissions by:
+//   - Parsing and validating form data
+//   - Authenticating user credentials
+//   - Managing user sessions
+//   - Handling redirects after successful login
 //
 // Parameters:
-//   - w: http.ResponseWriter - Used to write the HTTP response.
-//   - r: *http.Request - Contains the incoming HTTP request.
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
 //
-// Flow:
-// 1. Decode the form data from the request body.
-// 2. Validate the form data.
-// 3. If validation fails, re-render the login form with error messages.
-// 4. Authenticate the user against the database.
-// 5. If authentication fails, re-render the login form with an error message.
-// 6. Create a new session for the user.
-// 7. Redirect the user to the home page.
+// Processing Flow:
+// 1. Decode and parse form data from request body
+// 2. Validate email and password fields:
+//   - Email must be non-blank and valid format
+//   - Password must be non-blank
 //
-// Error Handling:
-// - Invalid form data: 400 Bad Request.
-// - Validation errors: 401 Unauthorized.
-// - Authentication errors: 401 Unauthorized.
-// - Session errors: 500 Internal Server Error.
+// 3. If validation fails:
+//   - Re-render login form with error messages (HTTP 422)
 //
-// Flow:
-// 1. Parse and decode form data
-// 2. Validate credentials
-// 3. Handle validation errors
-// 4. Create user session
-// 5. Handle session creation errors
-// 6. Set flash message
-// 7. Redirect to home page
+// 4. Authenticate user credentials against database
+// 5. If authentication fails:
+//   - Re-render login form with generic error message (HTTP 422)
+//
+// 6. If authentication succeeds:
+//   - Renew session token for security
+//   - Store authenticated user ID in session
+//   - Redirect to either:
+//   - Original requested path (if available)
+//   - Home page (default)
 //
 // Error Handling:
-// - Invalid form data: 400 Bad Request
-// - Validation errors: 401 Unauthorized
-// - Session errors: 500 Internal Server Error
+// - Invalid form data: HTTP 400 Bad Request
+// - Validation errors: HTTP 422 Unprocessable Entity
+// - Authentication errors: HTTP 422 Unprocessable Entity
+// - Session errors: HTTP 500 Internal Server Error
 func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	var form userLoginForm
 
@@ -479,7 +475,23 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 
 	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
 
-	http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
+	// Use PopString to retrieve the path and remove it from the session atomically.
+	// It returns the string value and a bool indicating if the key existed and held a string.
+	path := app.sessionManager.PopString(r.Context(), "redirectPathAfterLogin")
+
+	// Check if the value existed in the session AND was a string.
+	// The check for path != "" might be slightly redundant if PopString guarantees
+	// ok=true only for non-empty strings it finds, but it's safe to include.
+	if path != "" {
+		// Value existed and was a non-empty string.
+		// No need to call Remove() here, PopString already did it.
+		http.Redirect(w, r, path, http.StatusSeeOther)
+		return
+	}
+
+	// If the path wasn't in the session, or wasn't a string, or was empty,
+	// redirect to the default page (e.g., account view)
+	http.Redirect(w, r, "/account/view", http.StatusSeeOther)
 }
 
 // userLogoutPost handles POST requests to logout the current user.

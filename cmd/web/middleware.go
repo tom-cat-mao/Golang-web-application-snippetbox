@@ -112,16 +112,22 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 	})
 }
 
-// use middleware to control if someone try to create a script without authentication
-// if access to the create page without authentication
-// it will be redirected to the login page
-// outherwise go to the next handler and clean the cache
+// requireAuthentication middleware enforces authentication for protected routes.
+// It checks if the user is authenticated and:
+//   - If not authenticated:
+//   - Stores the requested path in session for post-login redirection
+//   - Redirects to the login page with HTTP 303 (See Other)
+//   - If authenticated:
+//   - Sets Cache-Control: no-store header to prevent caching of protected pages
+//   - Proceeds to the next handler in the chain
 func (app *application) requireAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// if the user is not authenticated, redirect them to the login page and
-		// return from the middleware chain so that no subsequent handlers in
-		// the chain are executed
+		// Check if the user is authenticated. If not:
+		// 1. Store the current request path in session for post-login redirection
+		// 2. Redirect to the login page with HTTP 303 (See Other) status
+		// 3. Return from the middleware chain to prevent execution of subsequent handlers
 		if !app.isAuthenticated(r) {
+			app.sessionManager.Put(r.Context(), "redirectPathAfterLogin", r.URL.Path)
 			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 			return
 		}
