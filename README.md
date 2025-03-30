@@ -1,33 +1,68 @@
-# Golang-web-application-snippetbox
+# Snippetbox - Go Web Application
+
+A production-ready snippet sharing web application built with Go. Users can create, view, and manage code snippets with secure authentication.
+
+## Features
+
+- User authentication (Signup/Login)
+- CRUD operations for code snippets
+- Session management with secure cookies
+- Template caching for fast rendering
+- Secure headers middleware
+- Database connection pooling
+- HTTPS support with modern TLS configuration
+- Structured logging
+- Mock implementations for testing
 
 ## Project Structure
 
-This project is a Golang web application named Snippetbox. It is structured as follows:
+```text
+snippetbox/
+├── cmd/
+│   └── web/                  # Main application entry point
+│       ├── context.go        # Context key definitions
+│       ├── handlers.go       # HTTP handlers (controller logic)
+│       ├── helpers.go        # Template rendering & error helpers
+│       ├── main.go           # Server configuration & startup
+│       ├── middleware.go     # Authentication/CSRF middleware
+│       ├── routes.go         # Route definitions with alice middleware
+│       ├── templates.go      # Template cache management
+│       └── testutils_test.go # Handler test utilities
+├── internal/
+│   ├── assert/               # Custom test assertions
+│   ├── models/               # Database models and operations
+│   │   ├── mocks/           # Mock implementations for testing
+│   │   ├── snippets.go      # Snippet model (CRUD operations)
+│   │   ├── users.go         # User model (auth/management)
+│   │   └── testutils_test.go# Model test database utilities
+│   └── validator/           # Custom form validation
+├── ui/
+│   ├── html/                # HTML templates
+│   │   └── pages/          # Page-specific templates
+│   └── static/             # Static assets (CSS/JS/images)
+└── go.mod                  # Go module dependencies
+```
 
-- **cmd**: Contains the main applications. In this project, it contains the `web` application.
-    - **cmd/web**: Contains the source code for the web application.
-        - `context.go`: Defines context keys used throughout the application.
-        - `handlers.go`: Defines HTTP handler functions for different routes of the application, such as creating snippets, user signup, and login.
-        - `handlers_test.go`: Contains tests for the HTTP handlers to ensure they function correctly.
-        - `helpers.go`: Includes helper functions used by the handlers and other parts of the web application for common tasks like rendering templates and handling server errors.
-        - `main.go`: The entry point of the web application. It sets up and starts the HTTP server, initializes dependencies like the database connection and template cache.
-        - `middleware.go`: Defines middleware functions for request processing, such as setting common headers.
-        - `routes.go`: Defines the application's routes and maps them to the corresponding handler functions using a ServeMux.
-        - `templates.go`: Handles template management, including caching and rendering HTML templates. It also defines the `templateData` struct for passing data to templates.
-        - `templates_test.go`: Contains tests for template-related functionalities.
-        - `testutils_test.go`: Provides utility functions and types to support testing of HTTP handlers and middleware.
+### Key Components
 
-- **internal**: Contains internal packages that are not intended for use by external code.
-    - **internal/assert**: Provides custom assertion functions to simplify and standardize testing.
-    - **internal/models**: Contains the data models and database interaction logic.
-        - **internal/models/mocks**: Includes mock implementations of the model interfaces, primarily used for testing purposes to isolate components and avoid database dependencies in tests.
-        - `internal/models/snippets.go`: Defines the `Snippet` model and the `SnippetModel` struct with methods for interacting with the snippets table in the database. Implements `SnippetModelInterface`.
-        - `internal/models/testutils_test.go`: Provides utilities for setting up and tearing down test databases for model testing.
-        - `internal/models/users.go`: Defines the `User` model and the `UserModel` struct for handling user-related database operations. Implements `UserModelInterface`.
-    - **internal/validator**: Implements a custom validator for handling and checking form data.
+- **HTTP Layer** (`cmd/web`):
+  - Route-handler mapping with middleware chaining
+  - Session management with SCS
+  - Secure headers and CSRF protection
+  - Template caching and rendering pipeline
 
-- **ui**: Contains user interface assets.
-    - **ui/static**: Holds static files such as CSS stylesheets, JavaScript files, and images.
-    - **ui/html**: Contains HTML templates used to render the web pages.
+- **Data Layer** (`internal/models`):
+  - Database operations for snippets and users
+  - Bcrypt password hashing
+  - Mock implementations for isolated testing
+  - Test database management utilities
 
-This structure helps to organize the codebase by separating concerns into different directories and packages, making the project more maintainable and understandable.
+- **Validation** (`internal/validator`):
+  - Form validation helpers
+  - Error message customization
+  - Field-specific validation rules
+
+- **UI Assets** (`ui/`):
+  - HTML template inheritance system
+  - Static file embedding for production
+  - Responsive CSS layout
