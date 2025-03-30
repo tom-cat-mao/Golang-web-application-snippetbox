@@ -58,6 +58,23 @@ type snippetCreateForm struct {
 	validator.Validator `form:"-"`
 }
 
+// userSignupForm represents the form data and validation rules for user registration.
+// It handles form data binding, validation, and error reporting for the signup process.
+//
+// Fields:
+//   - Name: string - User's full name (form:"name")
+//     Validation rules:
+//   - Required: Must not be blank
+//   - Email: string - User's email address (form:"email")
+//     Validation rules:
+//   - Required: Must not be blank
+//   - Must be valid email format
+//   - Password: string - User's password (form:"password")
+//     Validation rules:
+//   - Required: Must not be blank
+//   - Minimum length: 8 characters
+//   - Validator: validator.Validator - Embedded validator for error management (form:"-")
+//     Purpose: Tracks and reports validation errors across form fields
 type userSignupForm struct {
 	Name                string `form:"name"`
 	Email               string `form:"email"`
@@ -81,6 +98,29 @@ type userLoginForm struct {
 	Email               string `form:"email"`
 	Password            string `form:"password"`
 	validator.Validator `form:"-"`
+}
+
+// accountPasswordUpdateForm represents the form data and validation rules for updating the account password.
+// It handles form data binding, validation, and error reporting for the password update process.
+//
+// Fields:
+//   - CurrentPassword: string - User's current password (form:"current_password")
+//     Validation rules:
+//   - Required: Must not be blank
+//   - NewPassword: string - User's new password (form:"new_password")
+//     Validation rules:
+//   - Required: Must not be blank
+//   - Minimum length: 8 characters
+//   - NewPasswordConfirmation: string - Confirmation of the new password (form:"new_password_confirmation")
+//     Validation rules:
+//   - Required: Must match the new password
+//   - Validator: validator.Validator - Embedded validator for error management (form:"-")
+//     Purpose: Tracks and reports validation errors across form fields
+type accountPasswordUpdateForm struct {
+	CurrentPassword         string `form:"current_password"`
+	NewPassword             string `form:"new_password"`
+	NewPasswordConfirmation string `form:"new_password_confirmation"`
+	validator.Validator     `form:"-"`
 }
 
 // home handles GET requests to the root URL (/).
@@ -621,4 +661,105 @@ func (app *application) accountView(w http.ResponseWriter, r *http.Request) {
 
 	// Render the account page template
 	app.render(w, r, http.StatusOK, "account.html", data)
+}
+
+// accountPasswordUpdate handles GET requests to display the password update form.
+// It performs the following operations:
+// 1. Initializes template data
+// 2. Prepares an empty accountPasswordUpdateForm struct
+// 3. Renders the password update form template
+//
+// Parameters:
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request
+//
+// Flow:
+// - Create template data
+// - Initialize empty form struct
+// - Render "password.html" template
+//
+// Template:
+// - Uses ui/html/pages/password.html template
+// - Displays form fields for current password, new password, and password confirmation
+func (app *application) accountPasswordUpdate(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+	data.Form = accountPasswordUpdateForm{}
+
+	app.render(w, r, http.StatusOK, "password.html", data)
+}
+
+// accountPasswordUpdatePost handles POST requests to update a user's password.
+// It performs the following operations:
+// 1. Retrieves the authenticated user's ID from the session
+// 2. Decodes and validates the password update form data
+// 3. Validates form fields:
+//   - Current password: Must not be blank
+//   - New password: Must not be blank and at least 8 characters
+//   - Password confirmation: Must match new password
+//
+// 4. If validation fails, re-renders form with error messages
+// 5. Attempts to update password in database
+// 6. Handles incorrect current password case
+// 7. Sets success flash message and redirects to account view on success
+//
+// Parameters:
+//   - w: http.ResponseWriter - Used to write the HTTP response
+//   - r: *http.Request - Contains the incoming HTTP request and form data
+//
+// Error Handling:
+//   - Invalid form data: 400 Bad Request
+//   - Validation errors: 422 Unprocessable Entity with form errors
+//   - Incorrect current password: 422 Unprocessable Entity with error
+//   - Database errors: 500 Internal Server Error
+//
+// Returns:
+//   - Success: 303 See Other redirect to /account/view with flash message
+//   - Error: Appropriate error response based on error type
+func (app *application) accountPasswordUpdatePost(w http.ResponseWriter, r *http.Request) {
+	// Initialize form struct and get authenticated user ID
+	var form accountPasswordUpdateForm
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
+	// Decode form data from POST request
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// Validate all form fields
+	form.CheckField(validator.NotBlank(form.CurrentPassword), "current_password", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.NewPassword), "new_password", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.NewPasswordConfirmation), "new_password_confirmation", "This field cannot be blank")
+	form.CheckField(validator.MinChars(form.NewPassword, 8), "new_password", "This field must be at least 8 characters long")
+	form.CheckField(form.NewPassword == form.NewPasswordConfirmation, "new_password_confirmation", "Passwords do not match")
+
+	// If validation fails, re-render form with error messages
+	if !form.Valid() {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, r, http.StatusUnprocessableEntity, "password.html", data)
+		return
+	}
+
+	// Attempt to update password in database
+	err = app.users.PasswordUpdate(userID, form.CurrentPassword, form.NewPassword)
+	if err != nil {
+		// Handle incorrect current password case
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			form.AddFieldError("current_password", "Current password is incorrect")
+
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "password.html", data)
+		} else {
+			// Handle other database errors
+			app.serverError(w, r, err)
+		}
+		return
+	}
+
+	// Set success flash message and redirect to account view
+	app.sessionManager.Put(r.Context(), "flash", "Password updated successfully")
+	http.Redirect(w, r, "/account/view", http.StatusSeeOther)
 }

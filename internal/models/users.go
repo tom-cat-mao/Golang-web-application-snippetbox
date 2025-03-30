@@ -16,6 +16,7 @@ type UserModelInterface interface {
 	Authenticate(email, password string) (int, error)
 	Exists(id int) (bool, error)
 	Get(id int) (User, error)
+	PasswordUpdate(id int, current_password, new_password string) error
 }
 
 // User represents a registered user in the system.
@@ -174,4 +175,59 @@ func (m *UserModel) Get(id int) (User, error) {
 	}
 
 	return user, nil
+}
+
+// PasswordUpdate updates the password for a user with the given ID.
+// It first verifies the current password and then updates it to the new password.
+//
+// Parameters:
+// - id: The ID of the user whose password is to be updated.
+// - current_password: The current password of the user.
+// - new_password: The new password to set for the user.
+//
+// Returns:
+// - error: nil on success, or an error if the update fails.
+func (m *UserModel) PasswordUpdate(id int, current_password, new_password string) error {
+	var currentHash []byte
+
+	// Prepare SQL statement to retrieve the current hashed password for the user.
+	stmt := "SELECT hashed_password FROM users WHERE id = ?"
+
+	// Execute the query and scan the result into currentHash.
+	err := m.DB.QueryRow(stmt, id).Scan(&currentHash)
+	if err != nil {
+		// If no rows are returned, the user ID is invalid.
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrInvalidCredentials
+		} else {
+			// Return any other error encountered during the query.
+			return err
+		}
+	}
+
+	// Compare the provided current password with the stored hashed password.
+	err = bcrypt.CompareHashAndPassword(currentHash, []byte(current_password))
+	if err != nil {
+		// If the passwords do not match, return an invalid credentials error.
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return ErrInvalidCredentials
+		} else {
+			// Return any other error encountered during password comparison.
+			return err
+		}
+	}
+
+	// Generate a new hashed password from the new password provided.
+	newHash, err := bcrypt.GenerateFromPassword([]byte(new_password), 12)
+	if err != nil {
+		// Return an error if password hashing fails.
+		return err
+	}
+
+	// Prepare SQL statement to update the user's password in the database.
+	stmt = "UPDATE users SET hashed_password = ? WHERE id = ?"
+	// Execute the update statement with the new hashed password.
+	_, err = m.DB.Exec(stmt, newHash, id)
+	// Return any error encountered during the update.
+	return err
 }

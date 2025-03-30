@@ -70,6 +70,10 @@ func (app *application) routes() http.Handler {
 	// GET user account view
 	mux.Handle("GET /account/view", protected.ThenFunc(app.accountView))
 
+	mux.Handle("GET /account/password/update", protected.ThenFunc(app.accountPasswordUpdate))
+
+	mux.Handle("POST /account/password/update", protected.ThenFunc(app.accountPasswordUpdatePost))
+
 	// Create a middleware chain containing our 'standard' middleware
 	// which will be applied to every request our application receives.
 	standard := alice.New(app.recoverPanic, app.logRequest, commonHeaders)
